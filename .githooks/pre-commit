@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+# Updates the "Last updated" timestamp in README.md before each commit.
+
+set -e
+
+README="README.md"
+
+if [ ! -f "$README" ]; then
+  echo "pre-commit: README.md not found, skipping update"
+  exit 0
+fi
+
+TODAY=$(date +%Y-%m-%d)
+
+# Replace the date between the LAST_UPDATED markers
+sed -i '' \
+  "s|_Last updated: .*_|_Last updated: ${TODAY}_|" \
+  "$README"
+
+# Stage the updated README so the new date is included in this commit
+git add "$README"
+
+echo "pre-commit: README.md updated (Last updated: ${TODAY})"

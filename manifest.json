@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "GFlights - WebMCP",
+  "version": "0.1.0",
+  "description": "Inject WebMCP tools into websites and chat with an AI agent that can use them.",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.google.com/travel/flights*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/travel/flights*"],
+      "js": [
+        "content/bridge.js",
+        "content/tools/helpers.js",
+        "content/tools/google-flights/searchFlights.js",
+        "content/tools/google-flights/getResults.js",
+        "content/tools/google-flights/setFilters.js",
+        "content/tools/google-flights/getPriceInsights.js",
+        "content/tools/google-flights/setSearchOptions.js",
+        "content/tools/google-flights/sortResults.js",
+        "content/injector.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Open WebMCP Panel",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
