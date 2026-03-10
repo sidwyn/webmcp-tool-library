@@ -40,6 +40,7 @@ When the user asks for the cheapest flight in a month (e.g. "cheapest nonstop SF
 4. Report the cheapest dates found from the date grid, along with the price
 
 RULES:
+- If a DETECTED ORIGIN is provided above, ALWAYS use it. Never ask "where are you flying from?" — just use the detected origin and proceed.
 - Always use 3-letter IATA codes. For cities with multiple airports pick the primary one (NYC → JFK).
 - "Next month" means the calendar month after ${today}.
 - Do one search at a time.
@@ -91,7 +92,7 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Alwa
       system += `\n\nCURRENT PAGE URL: ${pageContext.url}`;
     }
     if (pageContext?.originText) {
-      system += `\nDETECTED ORIGIN: "${pageContext.originText}" is already set as the departure airport on the page. IMPORTANT: Use this as the origin for any flight search — do NOT ask the user where they are flying from. Just proceed with the search using this origin.`;
+      system += `\n\nDETECTED ORIGIN: "${pageContext.originText}" is the user's departure airport (already set on the Google Flights page).\nCRITICAL RULE: You MUST use "${pageContext.originText}" as the origin. NEVER ask the user where they are flying from — you already know. If they say "flights to Tokyo", search from ${pageContext.originText} to Tokyo immediately. This is non-negotiable.`;
     }
 
     const body = {

@@ -449,8 +449,9 @@ const App = (() => {
     isStreaming = false;
     sendBtn.disabled = false;
     messageInput.disabled = false;
-    messageInput.focus();
     statusText.textContent = '';
+    // Delay focus slightly to ensure the browser processes the disabled=false change
+    setTimeout(() => messageInput.focus(), 50);
   }
 
   function fetchPageContext() {

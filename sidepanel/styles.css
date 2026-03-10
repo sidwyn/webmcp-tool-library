@@ -552,7 +552,7 @@ body {
   background: var(--bg-input);
   border: 1.5px solid var(--border-medium);
   border-radius: var(--radius-lg);
-  padding: 8px 8px 8px 14px;
+  padding: 8px 8px 8px 4px;
   transition: border-color var(--transition);
 }
 
@@ -570,6 +570,7 @@ body {
   border: none;
   outline: none;
   resize: none;
+  padding: 4px 0 4px 10px;
   max-height: 120px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -619,11 +620,6 @@ body {
   color: var(--text-muted);
 }
 
-.disclaimer-text {
-  font-size: 11px;
-  color: var(--text-muted);
-  opacity: 0.6;
-}
 
 /* Settings View */
 #settings-view {
