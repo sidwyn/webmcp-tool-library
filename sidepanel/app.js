@@ -80,9 +80,13 @@ const App = (() => {
   // ── Message Rendering ────────────────────────────────────────────────────
 
   function renderMarkdown(text) {
+    // Strip any raw JSON objects/arrays that the model may echo as text
+    // (tool call inputs/outputs that shouldn't be shown to users)
+    let processed = text.replace(/^\s*\{[\s\S]*?\}\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
+
     // First extract code blocks to protect them
     const codeBlocks = [];
-    let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    processed = processed.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       const idx = codeBlocks.length;
       codeBlocks.push(`<pre><code class="lang-${lang}">${escapeHtml(code.trim())}</code></pre>`);
       return `\x00CB${idx}\x00`;
@@ -103,13 +107,17 @@ const App = (() => {
       const headers = parseRow(rows[0]);
       const dataRows = rows.slice(2);
 
+      const inlineFormat = (s) => s
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+
       let html = '<div class="md-table-wrap"><table class="md-table"><thead><tr>';
-      for (const h of headers) html += `<th>${h}</th>`;
+      for (const h of headers) html += `<th>${inlineFormat(h)}</th>`;
       html += '</tr></thead><tbody>';
       for (const row of dataRows) {
         const cells = parseRow(row);
         html += '<tr>';
-        for (const c of cells) html += `<td>${c}</td>`;
+        for (const c of cells) html += `<td>${inlineFormat(c)}</td>`;
         html += '</tr>';
       }
       html += '</tbody></table></div>';
