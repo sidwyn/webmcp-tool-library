@@ -7,23 +7,26 @@ function registerGoogleFlightsTools() {
   // Clear all tools before re-registering
   ['search_flights', 'get_results', 'set_filters', 'set_search_options',
    'sort_results', 'get_price_insights', 'get_flight_details', 'track_price',
-   'explore_destinations', 'search_multi_city', 'set_connecting_airports'
+   'explore_destinations', 'search_multi_city', 'set_connecting_airports',
+   'get_tracked_flights', 'get_booking_link', 'select_return_flight'
   ].forEach(name => registry.unregister(name));
 
-  const isFlightsPage = url.includes('google.com/travel/flights');
   const isExplorePage = url.includes('google.com/travel/explore');
+  const isSavedPage = url.includes('/travel/flights/saved') || url.includes('/travel/flights/saves');
+  const isFlightsPage = url.includes('google.com/travel/flights') && !isSavedPage;
 
-  if (!isFlightsPage && !isExplorePage) return;
+  if (!isFlightsPage && !isExplorePage && !isSavedPage) return;
 
   const hasSearchParams = window.location.search.includes('q=') ||
                           window.location.search.includes('tfs=') ||
                           window.location.hash.includes('tfs=');
 
-  // Always available on any Google Flights / Explore page
+  // Always available on any Google Flights / Explore / Saved page
   registry.register(SearchFlightsTool);
   registry.register(SetSearchOptionsTool);
   registry.register(SearchMultiCityTool);
   registry.register(ExploreDestinationsTool);
+  registry.register(GetTrackedFlightsTool);
 
   if (isFlightsPage && hasSearchParams) {
     // Results page: full toolset
@@ -34,6 +37,8 @@ function registerGoogleFlightsTools() {
     registry.register(GetFlightDetailsTool);
     registry.register(TrackPriceTool);
     registry.register(SetConnectingAirportsTool);
+    registry.register(GetBookingLinkTool);
+    registry.register(SelectReturnFlightTool);
   }
 }
 

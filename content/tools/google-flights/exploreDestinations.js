@@ -2,13 +2,22 @@
 
 const ExploreDestinationsTool = {
   name: 'explore_destinations',
-  description: 'Find cheap flight destinations from an origin airport. Navigates to the Google Flights Explore map which shows the cheapest destinations. If already on the Explore page, reads the destination list. Call once to navigate, then call again to read results.',
+  description: 'Find cheap flight destinations from an origin airport. Navigates to the Google Flights Explore map which shows the cheapest destinations. Supports flexible date options like specific months or weekend trips. If already on the Explore page, reads the destination list. Call once to navigate, then call again to read results.',
   inputSchema: {
     type: 'object',
     properties: {
       origin: {
         type: 'string',
         description: 'Departure airport IATA code (e.g., "SFO", "JFK"). If provided, navigates to the Explore page with this origin. Omit to read results from the current Explore page.'
+      },
+      month: {
+        type: 'string',
+        description: 'Target month in YYYY-MM format (e.g., "2026-04" for April 2026). Filters destinations for that month. Optional.'
+      },
+      tripLength: {
+        type: 'string',
+        enum: ['weekend', '1-week', '2-weeks'],
+        description: 'Preferred trip length. "weekend" for 2-4 day trips, "1-week" for ~7 days, "2-weeks" for ~14 days. Optional.'
       },
       maxResults: {
         type: 'integer',
@@ -18,7 +27,7 @@ const ExploreDestinationsTool = {
   },
 
   execute: async (args) => {
-    const { origin, maxResults = 10 } = args;
+    const { origin, month, tripLength, maxResults = 10 } = args;
     const currentUrl = window.location.href;
     const isOnExplorePage = currentUrl.includes('/travel/explore');
 
@@ -39,15 +48,32 @@ const ExploreDestinationsTool = {
         url = 'https://www.google.com/travel/explore';
       }
 
+      // Append date parameters if specified
+      if (month) {
+        const [year, mo] = month.split('-');
+        const startDate = `${year}-${mo}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(mo), 0).getDate();
+        const endDate = `${year}-${mo}-${lastDay}`;
+        url += `&d1=${startDate}&d2=${endDate}`;
+      }
+
+      if (tripLength) {
+        const lengthMap = { 'weekend': '3', '1-week': '7', '2-weeks': '14' };
+        const days = lengthMap[tripLength] || '7';
+        url += `&lt=${days}`;
+      }
+
       // Navigate AFTER returning — the page unload destroys the content script context,
       // so we must send the response before location change happens.
       setTimeout(() => { window.location.href = url; }, 50);
 
       const originMsg = originCode ? `from ${originCode}` : 'from your default location';
+      const monthMsg = month ? ` in ${month}` : '';
+      const tripMsg = tripLength ? ` (${tripLength} trips)` : '';
       return {
         content: [{
           type: 'text',
-          text: `Navigating to Explore destinations ${originMsg}. Wait for the page to load, then call explore_destinations again without origin to read results.`
+          text: `Navigating to Explore destinations ${originMsg}${monthMsg}${tripMsg}. Wait for the page to load, then call explore_destinations again without origin to read results.`
         }]
       };
     }

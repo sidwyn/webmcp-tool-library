@@ -17,6 +17,7 @@ const App = (() => {
   const toolCount = document.getElementById('tool-count');
   const toolBadge = document.getElementById('tool-badge');
   const modelSelector = document.getElementById('model-selector');
+  const newChatBtn = document.getElementById('new-chat-btn');
   const toolsList = document.getElementById('tools-list');
 
   // ── Tool Name Formatting ──────────────────────────────────────────────────
@@ -32,7 +33,10 @@ const App = (() => {
     track_price:              'Track Price',
     explore_destinations:     'Explore Destinations',
     search_multi_city:        'Multi-City Search',
-    set_connecting_airports:  'Connecting Airports'
+    set_connecting_airports:  'Connecting Airports',
+    get_tracked_flights:      'Tracked Flights',
+    get_booking_link:         'Booking Link',
+    select_return_flight:     'Return Flight'
   };
 
   function toolDisplayName(name) {
@@ -294,6 +298,78 @@ const App = (() => {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  // ── Conversation Persistence ───────────────────────────────────────────────
+
+  function saveConversation() {
+    try {
+      chrome.storage.session.set({
+        webmcp_conversation: conversationHistory,
+        webmcp_has_messages: conversationHistory.length > 0
+      });
+    } catch {
+      // session storage may not be available
+    }
+  }
+
+  async function loadConversation() {
+    return new Promise(resolve => {
+      try {
+        chrome.storage.session.get(['webmcp_conversation', 'webmcp_has_messages'], items => {
+          if (chrome.runtime.lastError || !items.webmcp_has_messages) {
+            resolve(false);
+            return;
+          }
+          conversationHistory = items.webmcp_conversation || [];
+          resolve(conversationHistory.length > 0);
+        });
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  function restoreConversationUI() {
+    if (conversationHistory.length === 0) return;
+    welcomeState.style.display = 'none';
+
+    for (const msg of conversationHistory) {
+      if (msg.role === 'user') {
+        const text = typeof msg.content === 'string' ? msg.content : '';
+        if (text) addUserMessage(text);
+      } else if (msg.role === 'assistant') {
+        const text = typeof msg.content === 'string'
+          ? msg.content
+          : (Array.isArray(msg.content)
+              ? msg.content.filter(b => b.type === 'text').map(b => b.text).join('')
+              : '');
+        if (text) {
+          const bubble = createAssistantMessage();
+          bubble.dataset.raw = text;
+          finalizeMessage(bubble);
+        }
+      }
+      // Skip tool_result messages in UI restoration
+    }
+  }
+
+  // ── New Chat ────────────────────────────────────────────────────────────────
+
+  function startNewChat() {
+    conversationHistory = [];
+    saveConversation();
+
+    // Clear all messages from DOM
+    const children = Array.from(messagesEl.children);
+    for (const child of children) {
+      if (child !== welcomeState) child.remove();
+    }
+    welcomeState.style.display = '';
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    statusText.textContent = '';
+  }
+
   // ── Provider Management ──────────────────────────────────────────────────
 
   async function getProvider() {
@@ -367,6 +443,8 @@ const App = (() => {
     pageContext = await fetchPageContext();
 
     await runAgentLoop(provider);
+
+    saveConversation();
 
     isStreaming = false;
     sendBtn.disabled = false;
@@ -582,6 +660,15 @@ const App = (() => {
     initExamplePrompts();
     initMessageListener();
     updateToolUI();
+
+    // New chat button
+    newChatBtn.addEventListener('click', startNewChat);
+
+    // Restore previous conversation
+    const hasHistory = await loadConversation();
+    if (hasHistory) {
+      restoreConversationUI();
+    }
 
     // Request current tools from active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

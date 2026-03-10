@@ -28,9 +28,15 @@ Built on the [WebMCP](https://github.com/anthropics/webmcp) standard: tools are 
 - **Multi-model** — works with Claude (Anthropic) or GPT-4o (OpenAI)
 - **Flight details** — "Tell me more about flight #3" — see leg-by-leg itinerary, aircraft, legroom, emissions
 - **Price tracking** — Get email alerts when prices change for your search
+- **Tracked flights dashboard** — "Show my tracked flights" — view all your saved price alerts and price history
+- **Booking links** — "How do I book flight #2?" — get direct booking URLs from airlines and OTAs
+- **Return flight selection** — After picking a departing flight, browse and select return options
 - **Explore destinations** — "Where can I fly for cheap?" — browse the cheapest destinations on a map
+- **Flexible explore dates** — Filter explore by month or trip length (weekend, 1 week, 2 weeks)
 - **Multi-city search** — Complex itineraries like SFO→Tokyo→Bangkok→SFO
 - **Connecting airport filter** — Exclude specific layover airports
+- **Conversation persistence** — Chat history is preserved when you navigate or close the panel
+- **New chat** — Start a fresh conversation with one click
 
 ---
 
@@ -69,7 +75,10 @@ All tools are registered via `window.__webmcpRegistry` and available to the AI o
 | `get_price_insights` | Results page | Read price level, typical range, scan date grid for cheapest dates, and recommend whether to book now |
 | `get_flight_details` | Results page | Expand a flight to see detailed segment info: layovers, aircraft, flight numbers, legroom, emissions |
 | `track_price` | Results page | Toggle email price tracking for specific dates or any dates |
-| `explore_destinations` | All pages | Navigate to Explore map and read cheapest destinations from an origin |
+| `get_tracked_flights` | All pages | View all saved price alerts and tracked flights with price history |
+| `get_booking_link` | Results page | Get booking links and prices from airlines/OTAs for a flight |
+| `select_return_flight` | Results page | List or select return flight options after choosing departing |
+| `explore_destinations` | All pages | Navigate to Explore map and read cheapest destinations (supports month/trip length) |
 | `search_multi_city` | All pages | Search multi-city itineraries with 2-5 legs |
 | `set_connecting_airports` | Results page | Exclude specific connecting/layover airports from results |
 
@@ -92,7 +101,15 @@ gflights-webmcp/
 │           ├── setFilters.js
 │           ├── setSearchOptions.js
 │           ├── sortResults.js
-│           └── getPriceInsights.js
+│           ├── getPriceInsights.js
+│           ├── getFlightDetails.js
+│           ├── trackPrice.js
+│           ├── getTrackedFlights.js
+│           ├── getBookingLink.js
+│           ├── selectReturnFlight.js
+│           ├── exploreDestinations.js
+│           ├── searchMultiCity.js
+│           └── setConnectingAirports.js
 ├── sidepanel/
 │   ├── index.html
 │   ├── app.js             # Chat UI + agent loop

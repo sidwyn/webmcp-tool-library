@@ -191,6 +191,17 @@ body {
   color: var(--text-primary);
 }
 
+.top-bar .icon-btn {
+  color: var(--text-inverse);
+  opacity: 0.8;
+}
+
+.top-bar .icon-btn:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.1);
+  color: var(--text-inverse);
+}
+
 /* Views */
 .view {
   display: none;

@@ -39,6 +39,9 @@
         "content/tools/google-flights/exploreDestinations.js",
         "content/tools/google-flights/searchMultiCity.js",
         "content/tools/google-flights/setConnectingAirports.js",
+        "content/tools/google-flights/getTrackedFlights.js",
+        "content/tools/google-flights/getBookingLink.js",
+        "content/tools/google-flights/selectReturnFlight.js",
         "content/injector.js"
       ],
       "run_at": "document_idle"
