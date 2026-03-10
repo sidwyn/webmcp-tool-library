@@ -157,46 +157,69 @@ const SetFiltersTool = {
       const wantedAirlines = args.airlines.split(',').map(a => a.trim().toLowerCase());
       const opened = await openFilterPanel(['Airlines', 'Airline']);
       if (opened) {
-        await WebMCPHelpers.sleep(200);
+        await WebMCPHelpers.sleep(300);
 
-        // Google Flights uses input[type="checkbox"] with label[for="id"].
-        // Airlines are checked by default; alliances are unchecked.
-        // To show ONLY wanted airlines: uncheck all unwanted, ensure wanted stay checked.
+        // Google Flights has an "Only" button next to each airline in the filter panel.
+        // Clicking "Only" deselects all other airlines in one click — much faster.
+        // Strategy: find the airline row that matches, click its "Only" button.
+
+        // Build a map of airline rows: each <li> contains a checkbox, label, and "Only" button
         const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-        let found = 0;
-        let unchecked = 0;
+        let clicked = false;
 
         for (const cb of checkboxes) {
-          // Get airline name from the associated label
           const label = cb.id ? document.querySelector(`label[for="${cb.id}"]`) : null;
           const name = (label?.textContent?.trim() || '').toLowerCase();
           if (!name || name.length < 2) continue;
-
-          // Skip alliance entries (Oneworld, SkyTeam, Star Alliance) — only handle airlines
           if (/^(oneworld|skyteam|star alliance)$/i.test(name)) continue;
 
           const isWanted = wantedAirlines.some(a => name.includes(a) || a.includes(name));
+          if (!isWanted) continue;
 
-          if (isWanted) {
-            found++;
-            // Ensure it's checked
-            if (!cb.checked) {
-              WebMCPHelpers.simulateClick(label || cb);
-              await WebMCPHelpers.sleep(30);
+          // Find the "Only" button in this airline's row
+          // Walk up from the checkbox to find the row container (typically an <li>)
+          let row = cb.parentElement;
+          for (let i = 0; i < 5 && row; i++) {
+            // Look for a button containing an "Only" span
+            const onlyBtn = Array.from(row.querySelectorAll('button')).find(btn =>
+              Array.from(btn.querySelectorAll('span')).some(s => s.textContent.trim() === 'Only')
+            );
+            if (onlyBtn) {
+              WebMCPHelpers.simulateClick(onlyBtn);
+              await WebMCPHelpers.sleep(300);
+              clicked = true;
+              actions.push(`Filtered to airline: ${label.textContent.trim()} (clicked "Only")`);
+              break;
             }
-          } else {
-            // Uncheck unwanted airlines
-            if (cb.checked) {
+            row = row.parentElement;
+          }
+          if (clicked) break;
+        }
+
+        // Fallback: if "Only" button not found, use the old checkbox approach
+        if (!clicked) {
+          let found = 0;
+          let unchecked = 0;
+          for (const cb of checkboxes) {
+            const label = cb.id ? document.querySelector(`label[for="${cb.id}"]`) : null;
+            const name = (label?.textContent?.trim() || '').toLowerCase();
+            if (!name || name.length < 2) continue;
+            if (/^(oneworld|skyteam|star alliance)$/i.test(name)) continue;
+
+            const isWanted = wantedAirlines.some(a => name.includes(a) || a.includes(name));
+            if (isWanted) {
+              found++;
+              if (!cb.checked) { WebMCPHelpers.simulateClick(label || cb); await WebMCPHelpers.sleep(30); }
+            } else if (cb.checked) {
               WebMCPHelpers.simulateClick(label || cb);
               await WebMCPHelpers.sleep(30);
               unchecked++;
             }
           }
+          actions.push(found > 0
+            ? `Filtered to airlines: ${args.airlines} (deselected ${unchecked} others)`
+            : `WARNING: Could not find airline checkboxes for: ${args.airlines}`);
         }
-
-        actions.push(found > 0
-          ? `Filtered to airlines: ${args.airlines} (deselected ${unchecked} other airline${unchecked !== 1 ? 's' : ''})`
-          : `WARNING: Could not find airline checkboxes for: ${args.airlines}`);
 
         await closePanel();
       } else {
