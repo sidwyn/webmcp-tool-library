@@ -3,19 +3,21 @@
 class BaseLLMProvider {
   constructor(apiKey) {
     this.apiKey = apiKey;
+    this.sitePrompt = '';
   }
 
   /**
    * Send a message and stream the response.
    * @param {Array} messages - Conversation history in the provider's format
    * @param {Array} tools - WebMCP tool definitions
+   * @param {Object} pageContext - Current page context
    * @param {Object} callbacks
    * @param {Function} callbacks.onToken - Called with each text token string
    * @param {Function} callbacks.onToolCall - Called with { toolName, toolUseId, args }
    * @param {Function} callbacks.onDone - Called with final stop reason
    * @param {Function} callbacks.onError - Called with Error object
    */
-  async streamMessage(messages, tools, callbacks) {
+  async streamMessage(messages, tools, pageContext, callbacks) {
     throw new Error('Not implemented');
   }
 

@@ -6,7 +6,7 @@ globalThis.window = { location: { href: 'https://www.google.com/travel/flights' 
 globalThis.setTimeout = vi.fn();
 
 const SearchMultiCityTool = loadTool(
-  join(__dirname, '../content/tools/google-flights/searchMultiCity.js'),
+  join(__dirname, '../content/sites/google-flights/tools/searchMultiCity.js'),
   'SearchMultiCityTool'
 );
 

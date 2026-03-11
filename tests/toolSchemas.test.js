@@ -22,17 +22,12 @@ globalThis.WebMCPHelpers = {
   setSliderValue: () => {},
 };
 
-const toolDir = join(__dirname, '../content/tools/google-flights');
+const toolDir = join(__dirname, '../content/sites/google-flights/tools');
 const toolFiles = readdirSync(toolDir).filter(f => f.endsWith('.js'));
 const tools = {};
 
 for (const file of toolFiles) {
   const filePath = join(toolDir, file);
-  const nameMatch = file.replace('.js', '')
-    .replace(/([A-Z])/g, ' $1').trim()
-    .split(/[\s-]+/)
-    .map((w, i) => i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w.charAt(0).toUpperCase() + w.slice(1))
-    .join('') + 'Tool';
   // Extract actual const name from file
   const { readFileSync } = await import('fs');
   const source = readFileSync(filePath, 'utf-8');

@@ -33,17 +33,22 @@ describe('AnthropicProvider', () => {
       expect(provider.systemPrompt).toContain('NEVER HALLUCINATE');
     });
 
-    it('system prompt lists all tools', () => {
-      const tools = ['search_flights', 'get_results', 'set_filters', 'get_price_insights',
-        'get_flight_details', 'track_price', 'explore_destinations', 'search_multi_city',
-        'get_tracked_flights', 'get_booking_link', 'select_return_flight'];
-      for (const tool of tools) {
-        expect(provider.systemPrompt).toContain(tool);
-      }
-    });
-
     it('includes quick reply syntax', () => {
       expect(provider.systemPrompt).toContain('<<');
+    });
+
+    it('has sitePrompt property defaulting to empty', () => {
+      expect(provider.sitePrompt).toBe('');
+    });
+
+    it('prepends sitePrompt when set', () => {
+      const p = new globalThis.AnthropicProvider('test-key');
+      p.sitePrompt = 'SITE-SPECIFIC INSTRUCTIONS';
+      expect(p.systemPrompt).toContain('SITE-SPECIFIC INSTRUCTIONS');
+      // sitePrompt should come before base prompt
+      const siteIdx = p.systemPrompt.indexOf('SITE-SPECIFIC INSTRUCTIONS');
+      const baseIdx = p.systemPrompt.indexOf('NEVER HALLUCINATE');
+      expect(siteIdx).toBeLessThan(baseIdx);
     });
   });
 
@@ -94,6 +99,10 @@ describe('OpenAIProvider', () => {
 
     it('system prompt contains anti-hallucination rules', () => {
       expect(provider.systemPrompt).toContain('NEVER HALLUCINATE');
+    });
+
+    it('has sitePrompt property defaulting to empty', () => {
+      expect(provider.sitePrompt).toBe('');
     });
   });
 

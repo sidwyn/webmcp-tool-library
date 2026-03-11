@@ -7,6 +7,8 @@ const App = (() => {
   let disabledTools = new Set();
   let isStreaming = false;
   let pageContext = {};
+  let sitePrompt = '';
+  let registeredSitePatterns = [];
 
   // DOM refs
   const messagesEl = document.getElementById('messages');
@@ -22,26 +24,8 @@ const App = (() => {
 
   // ── Tool Name Formatting ──────────────────────────────────────────────────
 
-  const TOOL_DISPLAY_NAMES = {
-    search_flights:           'Search Flights',
-    get_results:              'Get Results',
-    set_filters:              'Set Filters',
-    set_search_options:       'Search Options',
-    sort_results:             'Sort Results',
-    get_price_insights:       'Price Insights',
-    get_flight_details:       'Flight Details',
-    track_price:              'Track Price',
-    explore_destinations:     'Explore Destinations',
-    search_multi_city:        'Multi-City Search',
-    set_connecting_airports:  'Connecting Airports',
-    get_tracked_flights:      'Tracked Flights',
-    get_booking_link:         'Booking Link',
-    select_return_flight:     'Return Flight'
-  };
-
   function toolDisplayName(name) {
-    return TOOL_DISPLAY_NAMES[name] ||
-      name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   // ── Tool Management ──────────────────────────────────────────────────────
@@ -542,15 +526,14 @@ const App = (() => {
       return;
     }
 
-    // If no tools connected, auto-navigate to Google Flights and wait for tools
+    // If no tools connected, try to navigate to a supported site and wait
     if (getActiveTools().length === 0) {
-      statusText.textContent = 'Navigating to Google Flights...';
-      const navigated = await navigateToGoogleFlights();
+      statusText.textContent = 'Navigating to supported site...';
+      const navigated = await navigateToDefaultSite();
       if (navigated) {
-        // Wait for content script to load and register tools (poll up to 10s)
         const toolsReady = await waitForTools(10000);
         if (!toolsReady) {
-          addErrorMessage('Could not connect to Google Flights. Please refresh the page and try again.');
+          addErrorMessage('Could not connect to site tools. Please navigate to a supported site and try again.');
           isStreaming = false;
           sendBtn.disabled = false;
           messageInput.disabled = false;
@@ -563,6 +546,9 @@ const App = (() => {
     // Pin the target tab so switching tabs mid-stream doesn't break tool calls
     const targetTabId = await getActiveTabId();
     pageContext = await fetchPageContext(targetTabId);
+
+    // Pass site-specific prompt to the provider
+    provider.sitePrompt = sitePrompt;
 
     await runAgentLoop(provider, targetTabId);
 
@@ -603,11 +589,18 @@ const App = (() => {
     });
   }
 
-  function navigateToGoogleFlights() {
+  function navigateToDefaultSite() {
+    // Navigate to the first registered site module's URL
     return new Promise(resolve => {
-      chrome.runtime.sendMessage({ type: 'NAVIGATE_TAB', url: 'https://www.google.com/travel/flights' }, (response) => {
-        if (chrome.runtime.lastError) { resolve(false); return; }
-        resolve(response?.ok || false);
+      chrome.runtime.sendMessage({ type: 'GET_SITE_MODULES' }, (response) => {
+        if (chrome.runtime.lastError || !response?.siteModules?.length) { resolve(false); return; }
+        // Use the first match pattern, stripped of wildcard
+        const firstUrl = response.siteModules[0].matches[0].replace(/\*$/, '');
+        registeredSitePatterns = response.siteModules.flatMap(m => m.matches);
+        chrome.runtime.sendMessage({ type: 'NAVIGATE_TAB', url: firstUrl }, (navResponse) => {
+          if (chrome.runtime.lastError) { resolve(false); return; }
+          resolve(navResponse?.ok || false);
+        });
       });
     });
   }
@@ -801,29 +794,44 @@ const App = (() => {
 
   // ── Content Script Listener ───────────────────────────────────────────────
 
+  function urlMatchesSitePatterns(url) {
+    return registeredSitePatterns.some(pattern => {
+      // Convert match pattern to regex: strip trailing *, escape dots
+      const regex = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*'));
+      return regex.test(url);
+    });
+  }
+
   function initMessageListener() {
+    // Load site patterns from background
+    chrome.runtime.sendMessage({ type: 'GET_SITE_MODULES' }, (response) => {
+      if (chrome.runtime.lastError) return;
+      if (response?.siteModules) {
+        registeredSitePatterns = response.siteModules.flatMap(m => m.matches);
+      }
+    });
+
     chrome.runtime.onMessage.addListener((message) => {
       if (message.type === 'TOOLS_UPDATED') {
         registeredTools = message.tools || [];
+        if (message.sitePrompt !== undefined) {
+          sitePrompt = message.sitePrompt;
+        }
         updateToolUI();
       }
     });
 
-    // Clear tools when user navigates away from Google Flights
+    // Clear tools when user navigates away from a supported site
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (changeInfo.url === undefined) return;
-      // Only care about the active tab
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (!tabs[0] || tabs[0].id !== tabId) return;
-        const isFlightsPage = changeInfo.url.includes('google.com/travel/flights') ||
-                              changeInfo.url.includes('google.com/travel/explore');
-        if (!isFlightsPage) {
-          // Navigated away — clear stale tools
+        if (!urlMatchesSitePatterns(changeInfo.url)) {
           registeredTools = [];
           pageContext = {};
+          sitePrompt = '';
           updateToolUI();
         } else {
-          // Navigated to flights — re-fetch tools after content script loads
           setTimeout(() => {
             chrome.tabs.sendMessage(tabId, { type: 'GET_TOOLS' }, (response) => {
               if (chrome.runtime.lastError) return;
@@ -833,6 +841,9 @@ const App = (() => {
               }
               if (response?.pageContext) {
                 pageContext = response.pageContext;
+              }
+              if (response?.sitePrompt !== undefined) {
+                sitePrompt = response.sitePrompt;
               }
             });
           }, 1000);
@@ -844,11 +855,10 @@ const App = (() => {
     chrome.tabs.onActivated.addListener(({ tabId }) => {
       chrome.tabs.get(tabId, (tab) => {
         if (chrome.runtime.lastError) return;
-        const isFlightsPage = tab.url?.includes('google.com/travel/flights') ||
-                              tab.url?.includes('google.com/travel/explore');
-        if (!isFlightsPage) {
+        if (!tab.url || !urlMatchesSitePatterns(tab.url)) {
           registeredTools = [];
           pageContext = {};
+          sitePrompt = '';
           updateToolUI();
         } else {
           chrome.tabs.sendMessage(tabId, { type: 'GET_TOOLS' }, (response) => {
@@ -859,6 +869,9 @@ const App = (() => {
             }
             if (response?.pageContext) {
               pageContext = response.pageContext;
+            }
+            if (response?.sitePrompt !== undefined) {
+              sitePrompt = response.sitePrompt;
             }
           });
         }
@@ -908,6 +921,9 @@ const App = (() => {
           }
           if (response?.pageContext) {
             pageContext = response.pageContext;
+          }
+          if (response?.sitePrompt !== undefined) {
+            sitePrompt = response.sitePrompt;
           }
         });
       }

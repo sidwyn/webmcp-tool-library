@@ -4,7 +4,7 @@ import { join } from 'path';
 
 // We can test the airlineMatches logic and schema without DOM
 describe('SetFiltersTool schema', () => {
-  const source = readFileSync(join(__dirname, '../content/tools/google-flights/setFilters.js'), 'utf-8');
+  const source = readFileSync(join(__dirname, '../content/sites/google-flights/tools/setFilters.js'), 'utf-8');
 
   // Extract the inputSchema
   const schemaMatch = source.match(/inputSchema:\s*(\{[\s\S]*?\n\s{2}\})/);

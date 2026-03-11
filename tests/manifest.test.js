@@ -13,6 +13,7 @@ describe('manifest.json', () => {
     expect(manifest.permissions).toContain('sidePanel');
     expect(manifest.permissions).toContain('storage');
     expect(manifest.permissions).toContain('tabs');
+    expect(manifest.permissions).toContain('scripting');
   });
 
   it('has correct host permissions', () => {
@@ -20,18 +21,8 @@ describe('manifest.json', () => {
     expect(manifest.host_permissions).toContain('https://www.google.com/travel/explore*');
   });
 
-  it('content scripts only match Google Flights/Explore', () => {
-    const matches = manifest.content_scripts[0].matches;
-    for (const pattern of matches) {
-      expect(pattern).toMatch(/google\.com\/travel\/(flights|explore)/);
-    }
-  });
-
-  it('all content script files exist', () => {
-    for (const file of manifest.content_scripts[0].js) {
-      const fullPath = join(__dirname, '..', file);
-      expect(existsSync(fullPath), `Missing: ${file}`).toBe(true);
-    }
+  it('does not have static content_scripts (uses programmatic registration)', () => {
+    expect(manifest.content_scripts).toBeUndefined();
   });
 
   it('side panel path exists', () => {
@@ -51,21 +42,11 @@ describe('manifest.json', () => {
     }
   });
 
-  it('has bridge.js before injector.js in content scripts', () => {
-    const scripts = manifest.content_scripts[0].js;
-    const bridgeIdx = scripts.indexOf('content/bridge.js');
-    const injectorIdx = scripts.indexOf('content/injector.js');
-    expect(bridgeIdx).toBeGreaterThanOrEqual(0);
-    expect(injectorIdx).toBeGreaterThanOrEqual(0);
-    expect(bridgeIdx).toBeLessThan(injectorIdx);
+  it('is named WebMCPTools', () => {
+    expect(manifest.name).toBe('WebMCPTools');
   });
 
-  it('has helpers.js before tool files', () => {
-    const scripts = manifest.content_scripts[0].js;
-    const helpersIdx = scripts.indexOf('content/tools/helpers.js');
-    const toolFiles = scripts.filter(s => s.includes('google-flights/'));
-    for (const tool of toolFiles) {
-      expect(helpersIdx, `helpers.js should come before ${tool}`).toBeLessThan(scripts.indexOf(tool));
-    }
+  it('is version 0.2.0', () => {
+    expect(manifest.version).toBe('0.2.0');
   });
 });

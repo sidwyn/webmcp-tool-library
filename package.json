@@ -1,7 +1,7 @@
 {
-  "name": "gflights-webmcp",
-  "version": "1.0.0",
-  "description": "A Chrome extension that brings an AI-powered flight assistant into Google Flights. Search, filter, sort, and get booking advice — all in plain English from a side panel.",
+  "name": "webmcptools",
+  "version": "0.2.0",
+  "description": "A multi-site Chrome extension platform for WebMCP tools. Community-contributed site modules let AI agents interact with any website.",
   "main": "background.js",
   "directories": {
     "doc": "docs"
