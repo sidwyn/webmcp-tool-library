@@ -18,7 +18,7 @@ This way a company won't over-invest at the start, and the community gets early 
 
 ## Demo
 
-[Watch the demo video](media/google-flights-tokyo-demo.mov)
+https://github.com/sidwyn/webmcp-tool-library/raw/main/media/google-flights-tokyo-demo.mp4
 
 ## Supported Sites
 
