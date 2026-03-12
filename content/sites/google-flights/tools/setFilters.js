@@ -163,14 +163,18 @@ const SetFiltersTool = {
       if (opened) {
         await WebMCPHelpers.sleep(300);
 
-        // Match airline names flexibly: exact substring, word-start match, or first letters
+        // Match airline names flexibly but avoid false positives like "Air Cambodia" matching "Singapore Airlines"
         function airlineMatches(name, wanted) {
-          // Direct substring match (either direction)
-          if (name.includes(wanted) || wanted.includes(name)) return true;
-          // Word-start match: "singapore" matches "singapore airlines"
+          // Exact match
+          if (name === wanted) return true;
+          // Direct substring match (either direction) — but require at least 4 chars to avoid "air" in "airlines"
+          if (wanted.length >= 4 && name.includes(wanted)) return true;
+          if (name.length >= 4 && wanted.includes(name)) return true;
+          // Word match: at least one significant word (4+ chars) from wanted appears at the start of a name word
           const nameWords = name.split(/\s+/);
           const wantedWords = wanted.split(/\s+/);
-          if (nameWords.some(w => wantedWords.some(ww => w.startsWith(ww) || ww.startsWith(w)))) return true;
+          if (wantedWords.some(ww => ww.length >= 4 && nameWords.some(w => w.startsWith(ww)))) return true;
+          if (nameWords.some(w => w.length >= 4 && wantedWords.some(ww => ww.startsWith(w)))) return true;
           return false;
         }
 

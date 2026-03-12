@@ -44,12 +44,15 @@ describe('SetFiltersTool schema', () => {
 });
 
 describe('airlineMatches function', () => {
-  // Extract and test the matching logic
+  // Mirror of the matching logic from setFilters.js — must stay in sync
   function airlineMatches(name, wanted) {
-    if (name.includes(wanted) || wanted.includes(name)) return true;
+    if (name === wanted) return true;
+    if (wanted.length >= 4 && name.includes(wanted)) return true;
+    if (name.length >= 4 && wanted.includes(name)) return true;
     const nameWords = name.split(/\s+/);
     const wantedWords = wanted.split(/\s+/);
-    if (nameWords.some(w => wantedWords.some(ww => w.startsWith(ww) || ww.startsWith(w)))) return true;
+    if (wantedWords.some(ww => ww.length >= 4 && nameWords.some(w => w.startsWith(ww)))) return true;
+    if (nameWords.some(w => w.length >= 4 && wantedWords.some(ww => ww.startsWith(w)))) return true;
     return false;
   }
 
@@ -73,15 +76,36 @@ describe('airlineMatches function', () => {
     expect(airlineMatches('delta', 'united')).toBe(false);
   });
 
-  it('does not match partial word that is not a prefix', () => {
-    expect(airlineMatches('air india', 'india air')).toBe(true); // "air" word-starts match
-  });
-
   it('matches single word airlines', () => {
     expect(airlineMatches('jetblue', 'jetblue')).toBe(true);
   });
 
   it('matches when wanted is shorter prefix', () => {
     expect(airlineMatches('alaska airlines', 'alaska')).toBe(true);
+  });
+
+  // Critical regression tests: "Air X" airlines must NOT match "Y Airlines"
+  it('does NOT match Air Cambodia when wanting Singapore Airlines', () => {
+    expect(airlineMatches('air cambodia', 'singapore airlines')).toBe(false);
+  });
+
+  it('does NOT match Air China when wanting Singapore Airlines', () => {
+    expect(airlineMatches('air china', 'singapore airlines')).toBe(false);
+  });
+
+  it('does NOT match Air India when wanting United Airlines', () => {
+    expect(airlineMatches('air india', 'united airlines')).toBe(false);
+  });
+
+  it('matches Singapore Airlines when wanting Singapore Airlines', () => {
+    expect(airlineMatches('singapore airlines', 'singapore airlines')).toBe(true);
+  });
+
+  it('matches Air India when wanting Air India', () => {
+    expect(airlineMatches('air india', 'air india')).toBe(true);
+  });
+
+  it('matches short exact names like "sq"', () => {
+    expect(airlineMatches('sq', 'sq')).toBe(true);
   });
 });
