@@ -1,23 +1,30 @@
 # WebMCPTools
 
-An open-source Chrome extension platform that injects [WebMCP](https://github.com/anthropics/webmcp) tools into websites and lets you chat with an AI agent that can use them. Each supported site is a self-contained module — community contributors can add new sites without touching the core.
+An open-source Chrome extension platform that injects [WebMCP](https://github.com/anthropics/webmcp) tools into websites. Each supported site is a self-contained module, and community contributors can add new sites without touching the core.
 
-**Google Flights** is the first site module. More coming soon.
+This heavily leans on the [webmcp](https://github.com/webmachinelearning/webmcp) repository and webmcp definitions.
+
+I believe that instead of companies building webmcp tools and failing:
+![Companies building WebMCP tools and failing](media/company-fail.png)
+
+Tools should be built by the community:
+![Community building WebMCP tools and succeeding](media/community-success.png)
+
+This way a company won't over-invest at the start, and the community gets early access to awesome agents utilizing the webmcp spec. This beats the chicken-and-egg problem as well.
+
+**Google Flights** is the first site module. More coming soon. Open an issue if you have a suggestion for what else to tackle next.
 
 ---
 
 ## Demo
 
-<!-- VIDEO PLACEHOLDER -->
-> Demo video coming soon
-
----
+[Watch the demo video](media/google-flights-tokyo-demo.mov)
 
 ## Supported Sites
 
-| Site | Module | Tools | Description |
-|------|--------|-------|-------------|
-| Google Flights | `google-flights` | 14 | Search, filter, sort, compare prices, track, and book flights |
+| Site           | Module           | Tools | Description                                                   |
+| -------------- | ---------------- | ----- | ------------------------------------------------------------- |
+| Google Flights | `google-flights` | 14    | Search, filter, sort, compare prices, track, and book flights |
 
 Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -26,35 +33,32 @@ Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Features
 
 ### Platform
+
 - **Multi-site architecture** — each site is a self-contained module under `content/sites/`
 - **Programmatic content scripts** — sites register dynamically, no manifest changes needed per site
 - **Multi-model** — works with Claude (Anthropic) or GPT-4o (OpenAI)
 - **Prompt caching** — caches system prompt and tools to reduce token usage and avoid rate limits (Anthropic)
 - **Token usage display** — shows total tokens used and cache hit percentage per session
-- **Conversation persistence** — chat history preserved across navigation and tab switches
+- **Conversation persistence** — chat history preserved across navigation
 - **Smart rate limit handling** — automatic retry with exponential backoff, "Retry Now" button, and cancel
-- **Stop generation** — click the stop button or press Enter to cancel mid-stream, like Claude Code
-- **Travel preferences** — onboarding flow asks what matters most (price, cabin, bags, stops, trip type); preferences auto-apply to every search
-- **Fun status messages** — animated flight-themed verbs while tools run ("Scanning runways...", "Spinning the globe...")
-- **Markdown rendering** — headings, bold, tables, code blocks, and horizontal rules
 - **Dark mode** — adapts to system theme
 
 ### Google Flights Module
+
 - **Natural language search** — "Cheapest nonstop from SFO to NYC in April"
 - **Smart origin detection** — reads departure airport from the page
 - **Full filter control** — stops, price, airlines, times, duration, bags
-- **Price insights & date grid** — opens the Date Grid to find cheapest dates across a month
+- **Price insights & date grid** — navigates the full date grid to find cheapest dates across a month
 - **Flight details** — leg-by-leg itinerary, aircraft, legroom, emissions
 - **One-click booking** — clicks "Continue" to open the airline's booking site directly
 - **Fare comparison** — shows fare options (Basic Economy, Economy, etc.) with features and prices
-- **Destination fun facts** — shares fun facts about your destination city when booking
+- **Destination fun facts** — shares interesting facts about your destination when booking
 - **Price tracking** — email alerts when prices change
 - **Explore destinations** — cheapest places to fly on a map
 - **Multi-city search** — complex itineraries (SFO→Tokyo→Bangkok→SFO)
 - **Page awareness** — detects existing search results and acts on them without re-asking
 - **Quick reply suggestions** — clickable follow-up buttons
 - **Markdown tables** — clean formatted results
-- **Default round-trip** — always assumes round-trip unless you say otherwise
 
 ---
 
@@ -70,16 +74,10 @@ Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Setup
 
-1. Add your API key in the extension's Settings panel:
-   - **Anthropic** — get a key at [console.anthropic.com](https://console.anthropic.com)
-   - **OpenAI** — get a key at [platform.openai.com](https://platform.openai.com)
+Add your API key in the extension's Settings panel:
 
-2. On first launch, set your travel preferences (or skip and set them later in Settings):
-   - **Priority** — lowest price, direct flights, shortest trip, or best schedule
-   - **Cabin class** — economy, premium economy, business, or first
-   - **Bags** — carry-on only, 1 checked, or 2 checked
-   - **Stops** — any, nonstop only, or 1 stop or fewer
-   - **Trip type** — round trip or one way
+- **Anthropic** — get a key at [console.anthropic.com](https://console.anthropic.com)
+- **OpenAI** — get a key at [platform.openai.com](https://platform.openai.com)
 
 Keys are stored locally in `chrome.storage.local` and never leave your browser except to call the respective API.
 
@@ -132,22 +130,22 @@ Adding a new site = one entry in `SITE_MODULES` + one folder under `content/site
 
 ## Google Flights Tools
 
-| Tool | Available on | Description |
-|------|-------------|-------------|
-| `search_flights` | All pages | Navigate with origin, destination, dates, cabin class |
-| `set_search_options` | All pages | Change trip type, cabin class, passengers |
-| `get_results` | Results page | Read flight listings |
-| `set_filters` | Results page | Apply filters: stops, price, airlines, times, bags |
-| `sort_results` | Results page | Sort by Best or Cheapest |
-| `get_price_insights` | Results page | Price level, date grid, booking recommendation |
-| `get_flight_details` | Results page | Detailed segment info: layovers, aircraft, legroom |
-| `track_price` | Results page | Toggle email price tracking |
-| `get_tracked_flights` | All pages | View saved price alerts and history |
-| `get_booking_link` | Booking page | Show fare options and click "Continue" to book (fareRank) |
-| `select_return_flight` | Results page | List or select return options |
-| `explore_destinations` | All pages | Browse cheapest destinations on map |
-| `search_multi_city` | All pages | Multi-city itineraries (2-5 legs) |
-| `set_connecting_airports` | Results page | Exclude layover airports |
+| Tool                      | Available on | Description                                               |
+| ------------------------- | ------------ | --------------------------------------------------------- |
+| `search_flights`          | All pages    | Navigate with origin, destination, dates, cabin class     |
+| `set_search_options`      | All pages    | Change trip type, cabin class, passengers                 |
+| `get_results`             | Results page | Read flight listings                                      |
+| `set_filters`             | Results page | Apply filters: stops, price, airlines, times, bags        |
+| `sort_results`            | Results page | Sort by Best or Cheapest                                  |
+| `get_price_insights`      | Results page | Price level, date grid, booking recommendation            |
+| `get_flight_details`      | Results page | Detailed segment info: layovers, aircraft, legroom        |
+| `track_price`             | Results page | Toggle email price tracking                               |
+| `get_tracked_flights`     | All pages    | View saved price alerts and history                       |
+| `get_booking_link`        | Booking page | Show fare options and click "Continue" to book (fareRank) |
+| `select_return_flight`    | Results page | List or select return options                             |
+| `explore_destinations`    | All pages    | Browse cheapest destinations on map                       |
+| `search_multi_city`       | All pages    | Multi-city itineraries (2-5 legs)                         |
+| `set_connecting_airports` | Results page | Exclude layover airports                                  |
 
 ---
 
@@ -181,5 +179,7 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <!-- LAST_UPDATED -->
+
 _Last updated: 2026-03-12_
+
 <!-- /LAST_UPDATED -->
