@@ -36,9 +36,10 @@ describe('Google Flights prompt', () => {
     expect(prompt).toContain('click "Continue"');
   });
 
-  it('includes destination fun facts instruction', () => {
-    expect(prompt).toContain('DESTINATION FUN FACTS');
-    expect(prompt).toContain('fun facts about the destination');
+  it('includes mandatory destination fun facts instruction', () => {
+    expect(prompt).toContain('DESTINATION FUN FACTS (MANDATORY)');
+    expect(prompt).toContain('MUST include 2-3 fun facts');
+    expect(prompt).toContain('Fun facts about [City]');
   });
 
   it('instructs not to tell user to click Continue themselves', () => {

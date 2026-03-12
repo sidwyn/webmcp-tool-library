@@ -114,10 +114,20 @@ const GetBookingLinkTool = {
         const chosen = fareOptions[fareRank - 1];
         simulateClick(chosen.continueBtn);
         await sleep(1000);
+        // Extract destination from page for fun facts hint
+        let destination = null;
+        const destEl = Array.from(document.querySelectorAll('*')).find(el =>
+          el.children.length === 0 && /\bto\s+[A-Z][a-z]/.test(el.textContent) && el.textContent.length < 80
+        );
+        if (destEl) {
+          const dm = destEl.textContent.match(/to\s+([A-Z][A-Za-z\s]+?)(?:\s*\(|\s*$|\s*,)/);
+          if (dm) destination = dm[1].trim();
+        }
+
         return {
           content: [{
             type: 'text',
-            text: `Clicked "Continue" for ${chosen.fareName} (${chosen.price || 'price N/A'})${airline ? ' with ' + airline : ''}. The airline's booking page should now be opening.`
+            text: `Clicked "Continue" for ${chosen.fareName} (${chosen.price || 'price N/A'})${airline ? ' with ' + airline : ''}. The airline's booking page should now be opening.${destination ? `\n\nREMINDER: Include 2-3 fun facts about ${destination} in your response!` : '\n\nREMINDER: Include 2-3 fun facts about the destination city in your response!'}`
           }]
         };
       }

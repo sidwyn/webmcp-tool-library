@@ -392,6 +392,7 @@ const App = (() => {
     messageInput.value = '';
     messageInput.style.height = 'auto';
     statusText.textContent = '';
+    messageInput.focus();
   }
 
   // ── Provider Management ──────────────────────────────────────────────────
@@ -1085,6 +1086,10 @@ const App = (() => {
 
     // Autofocus the input so user can start typing immediately
     messageInput.focus();
+    // Re-focus when side panel becomes visible (Chrome may not focus on initial open)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) messageInput.focus();
+    });
 
     // Request current tools from active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

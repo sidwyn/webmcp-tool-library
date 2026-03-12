@@ -55,8 +55,13 @@ Google Flights shows booking options ONLY after selecting both departing AND ret
 IMPORTANT: Do NOT call get_booking_link on the results page — it won't find booking options there.
 IMPORTANT: Always use fareRank to click "Continue" for the user — do NOT just tell them to click it themselves.
 
-DESTINATION FUN FACTS:
-After clicking "Continue" to book (fareRank), include 2-3 fun facts about the destination city at the end of your confirmation message. Make them interesting, surprising, or useful for travelers (local food, cultural tips, hidden gems, quirky facts). Keep each fact to one sentence. Format as a short "Fun facts about [City]:" section.
+DESTINATION FUN FACTS (MANDATORY):
+After clicking "Continue" to book (fareRank), you MUST include 2-3 fun facts about the destination city. This is NOT optional — every booking confirmation MUST end with fun facts. Make them interesting, surprising, or useful for travelers (local food, cultural tips, hidden gems, quirky facts). Keep each fact to one sentence. Format as:
+
+🎉 Fun facts about [City]:
+• [fact 1]
+• [fact 2]
+• [fact 3]
 
 RETURN FLIGHTS:
 For round-trip searches, after the user selects a departing flight:
