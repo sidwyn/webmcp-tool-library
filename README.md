@@ -31,25 +31,30 @@ Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Multi-model** — works with Claude (Anthropic) or GPT-4o (OpenAI)
 - **Prompt caching** — caches system prompt and tools to reduce token usage and avoid rate limits (Anthropic)
 - **Token usage display** — shows total tokens used and cache hit percentage per session
-- **Conversation persistence** — chat history preserved across navigation
+- **Conversation persistence** — chat history preserved across navigation and tab switches
 - **Smart rate limit handling** — automatic retry with exponential backoff, "Retry Now" button, and cancel
+- **Stop generation** — click the stop button or press Enter to cancel mid-stream, like Claude Code
+- **Travel preferences** — onboarding flow asks what matters most (price, cabin, bags, stops, trip type); preferences auto-apply to every search
+- **Fun status messages** — animated flight-themed verbs while tools run ("Scanning runways...", "Spinning the globe...")
+- **Markdown rendering** — headings, bold, tables, code blocks, and horizontal rules
 - **Dark mode** — adapts to system theme
 
 ### Google Flights Module
 - **Natural language search** — "Cheapest nonstop from SFO to NYC in April"
 - **Smart origin detection** — reads departure airport from the page
 - **Full filter control** — stops, price, airlines, times, duration, bags
-- **Price insights & date grid** — navigates the full date grid to find cheapest dates across a month
+- **Price insights & date grid** — opens the Date Grid to find cheapest dates across a month
 - **Flight details** — leg-by-leg itinerary, aircraft, legroom, emissions
 - **One-click booking** — clicks "Continue" to open the airline's booking site directly
 - **Fare comparison** — shows fare options (Basic Economy, Economy, etc.) with features and prices
-- **Destination fun facts** — shares interesting facts about your destination when booking
+- **Destination fun facts** — shares fun facts about your destination city when booking
 - **Price tracking** — email alerts when prices change
 - **Explore destinations** — cheapest places to fly on a map
 - **Multi-city search** — complex itineraries (SFO→Tokyo→Bangkok→SFO)
 - **Page awareness** — detects existing search results and acts on them without re-asking
 - **Quick reply suggestions** — clickable follow-up buttons
 - **Markdown tables** — clean formatted results
+- **Default round-trip** — always assumes round-trip unless you say otherwise
 
 ---
 
@@ -65,10 +70,16 @@ Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Setup
 
-Add your API key in the extension's Settings panel:
+1. Add your API key in the extension's Settings panel:
+   - **Anthropic** — get a key at [console.anthropic.com](https://console.anthropic.com)
+   - **OpenAI** — get a key at [platform.openai.com](https://platform.openai.com)
 
-- **Anthropic** — get a key at [console.anthropic.com](https://console.anthropic.com)
-- **OpenAI** — get a key at [platform.openai.com](https://platform.openai.com)
+2. On first launch, set your travel preferences (or skip and set them later in Settings):
+   - **Priority** — lowest price, direct flights, shortest trip, or best schedule
+   - **Cabin class** — economy, premium economy, business, or first
+   - **Bags** — carry-on only, 1 checked, or 2 checked
+   - **Stops** — any, nonstop only, or 1 stop or fewer
+   - **Trip type** — round trip or one way
 
 Keys are stored locally in `chrome.storage.local` and never leave your browser except to call the respective API.
 
