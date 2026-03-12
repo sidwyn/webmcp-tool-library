@@ -14,7 +14,7 @@ class BaseLLMProvider {
    * @param {Object} callbacks
    * @param {Function} callbacks.onToken - Called with each text token string
    * @param {Function} callbacks.onToolCall - Called with { toolName, toolUseId, args }
-   * @param {Function} callbacks.onDone - Called with final stop reason
+   * @param {Function} callbacks.onDone - Called with (stopReason, usage)
    * @param {Function} callbacks.onError - Called with Error object
    */
   async streamMessage(messages, tools, pageContext, callbacks) {

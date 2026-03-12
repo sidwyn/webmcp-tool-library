@@ -2,19 +2,23 @@
 
 const GetBookingLinkTool = {
   name: 'get_booking_link',
-  description: 'Get booking options and prices for a flight. On the BOOKING PAGE (after selecting both departing and return flights), reads the "Book with" options. On the RESULTS PAGE, expands a flight card to show the "Select flight" button. You must select both departing and return flights before booking options appear.',
+  description: 'Get booking options and prices for a flight, or click "Continue" to book. On the BOOKING PAGE (after selecting both departing and return flights), reads fare options (Basic Economy, Economy, etc.) with prices. Pass a fareRank to click the "Continue" button for that fare — this opens the airline\'s booking site. On the RESULTS PAGE, expands a flight card to show the "Select flight" button.',
   inputSchema: {
     type: 'object',
     properties: {
       rank: {
         type: 'integer',
-        description: '1-based rank of the flight result to get booking info for (only used on results page, ignored on booking page)'
+        description: '1-based rank of the flight result to get booking info for (only used on results page)'
+      },
+      fareRank: {
+        type: 'integer',
+        description: 'On the booking page: click the "Continue" button for this fare option (1-based). Call without fareRank first to see available fares, then call again with fareRank to book.'
       }
     }
   },
 
   execute: async (args) => {
-    const { rank } = args;
+    const { rank, fareRank } = args;
     const url = window.location.href;
     const { simulateClick, sleep, findByText } = WebMCPHelpers;
 
@@ -30,55 +34,108 @@ const GetBookingLinkTool = {
         await sleep(1000);
       }
 
-      // Parse all "Book with" sections
-      const allElements = Array.from(document.querySelectorAll('*'));
-      const bookingSections = allElements.filter(el => {
-        const text = el.textContent.trim();
-        return /^Book with /i.test(text) && el.children.length < 15 &&
-               el.offsetHeight > 0 && text.length < 200;
-      });
+      // Parse fare options — each fare card contains a title (Basic Economy, Economy, etc.),
+      // a price, features, and a "Continue" button.
+      // Strategy: find all "Continue" buttons on the booking page and work backward to find
+      // each fare card's details.
+      const continueButtons = Array.from(document.querySelectorAll('button, a'))
+        .filter(el => {
+          const text = el.textContent.trim();
+          return /^Continue$/i.test(text) && el.offsetHeight > 0 && el.offsetWidth > 0;
+        });
 
-      // Deduplicate: keep the most specific (smallest) container per source
-      const seen = new Map();
-      for (const el of bookingSections) {
-        const text = el.textContent.trim();
-        const sourceMatch = text.match(/^Book with (.+?)(?:\s|$)/i);
-        const source = sourceMatch ? sourceMatch[1].replace(/Airline$/, '').trim() : text.substring(0, 30);
-        const key = source.toLowerCase();
-        if (!seen.has(key) || el.textContent.length < seen.get(key).textContent.length) {
-          seen.set(key, el);
+      const fareOptions = [];
+      for (const btn of continueButtons) {
+        // Walk up to find the fare card container
+        let card = btn.parentElement;
+        for (let i = 0; i < 10 && card; i++) {
+          const text = card.textContent || '';
+          // A fare card has a price and a fare class name
+          if (/\$[\d,]+/.test(text) && text.length > 30 && text.length < 2000) break;
+          card = card.parentElement;
         }
+        if (!card) continue;
+
+        const cardText = card.textContent;
+        const priceMatch = cardText.match(/\$[\d,]+/);
+        const price = priceMatch ? priceMatch[0] : null;
+
+        // Extract fare class name (e.g. "Basic Economy", "Economy", "Economy Plus")
+        // It's usually a heading or prominent text at the top of the card
+        const headings = Array.from(card.querySelectorAll('h1, h2, h3, h4, [role="heading"], strong, b'));
+        let fareName = null;
+        for (const h of headings) {
+          const t = h.textContent.trim();
+          if (t.length > 3 && t.length < 50 && !/\$/.test(t) && !/continue/i.test(t)) {
+            fareName = t;
+            break;
+          }
+        }
+        // Fallback: look for known fare class names in the card text
+        if (!fareName) {
+          const fareMatch = cardText.match(/(Basic Economy|Economy Plus|Premium Economy|Economy|Business|First Class|Main Cabin|Comfort Plus)/i);
+          fareName = fareMatch ? fareMatch[1] : 'Fare option';
+        }
+
+        // Extract key features (items with checkmarks)
+        const features = [];
+        const listItems = Array.from(card.querySelectorAll('li, [role="listitem"]'));
+        for (const li of listItems) {
+          const t = li.textContent.trim();
+          if (t.length > 3 && t.length < 100) features.push(t);
+        }
+
+        fareOptions.push({ fareName, price, features, continueBtn: btn });
       }
 
-      const options = [];
-      for (const [key, el] of seen) {
-        const text = el.textContent.trim();
-        const sourceMatch = text.match(/^Book with (.+?)(?:\s|$)/i);
-        const source = sourceMatch ? sourceMatch[1].replace(/Airline$/, '').trim() : key;
-        const priceMatch = text.match(/\$[\d,]+/);
-        options.push({ source, price: priceMatch ? priceMatch[0] : null });
+      // Also find the airline name from "Book with X" header
+      let airline = null;
+      const bookWithEl = Array.from(document.querySelectorAll('*'))
+        .find(el => /^Book with /i.test(el.textContent.trim()) && el.children.length < 5 && el.offsetHeight > 0);
+      if (bookWithEl) {
+        const m = bookWithEl.textContent.trim().match(/^Book with (.+?)(?:\s*Airline)?$/i);
+        if (m) airline = m[1].trim();
       }
 
-      if (options.length === 0) {
-        return { content: [{ type: 'text', text: 'On the booking page but could not find booking options. The page may still be loading.' }] };
+      if (fareOptions.length === 0) {
+        return { content: [{ type: 'text', text: 'On the booking page but could not find fare options. The page may still be loading.' }] };
       }
 
-      // Get the total price shown at top
-      const totalMatch = document.body.innerText.match(/Lowest total price[\s\S]*?\$[\d,]+/i);
-      const totalPrice = totalMatch ? totalMatch[0].match(/\$[\d,]+/)?.[0] : null;
+      // If fareRank is provided, click the Continue button for that fare
+      if (fareRank) {
+        if (fareRank < 1 || fareRank > fareOptions.length) {
+          return {
+            content: [{
+              type: 'text',
+              text: `Invalid fareRank ${fareRank}. There are ${fareOptions.length} fare options (1-${fareOptions.length}).`
+            }]
+          };
+        }
+        const chosen = fareOptions[fareRank - 1];
+        simulateClick(chosen.continueBtn);
+        await sleep(1000);
+        return {
+          content: [{
+            type: 'text',
+            text: `Clicked "Continue" for ${chosen.fareName} (${chosen.price || 'price N/A'})${airline ? ' with ' + airline : ''}. The airline's booking page should now be opening.`
+          }]
+        };
+      }
 
-      const summary = options.map((o, i) => {
-        let line = `${i + 1}. ${o.source}`;
-        if (o.price) line += ` — ${o.price}`;
+      // List fare options
+      const header = airline ? `Book with ${airline}\n\n` : '';
+      const summary = fareOptions.map((f, i) => {
+        let line = `${i + 1}. **${f.fareName}** — ${f.price || 'N/A'}`;
+        if (f.features.length > 0) {
+          line += '\n     ' + f.features.slice(0, 4).join(', ');
+        }
         return line;
       }).join('\n');
-
-      const header = totalPrice ? `Lowest total price: ${totalPrice}\n\n` : '';
 
       return {
         content: [{
           type: 'text',
-          text: `${header}Booking options:\n\n${summary}\n\nTo book, the user should click "Continue" next to their preferred option on the page.`
+          text: `${header}Fare options:\n\n${summary}\n\nCall get_booking_link with fareRank to click "Continue" and open the airline's booking site.`
         }]
       };
     }

@@ -9,6 +9,7 @@ const App = (() => {
   let pageContext = {};
   let sitePrompt = '';
   let registeredSitePatterns = [];
+  let sessionTokens = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0 };
 
   // DOM refs
   const messagesEl = document.getElementById('messages');
@@ -21,6 +22,7 @@ const App = (() => {
   const modelSelector = document.getElementById('model-selector');
   const newChatBtn = document.getElementById('new-chat-btn');
   const toolsList = document.getElementById('tools-list');
+  const tokenDisplay = document.getElementById('token-display');
 
   // ── Tool Name Formatting ──────────────────────────────────────────────────
 
@@ -298,6 +300,26 @@ const App = (() => {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  function updateTokenDisplay() {
+    const total = sessionTokens.input + sessionTokens.output + sessionTokens.cacheRead + sessionTokens.cacheCreate;
+    if (total === 0) {
+      tokenDisplay.textContent = '';
+      return;
+    }
+    const cached = sessionTokens.cacheRead;
+    const parts = [`${formatTokenCount(total)} tokens`];
+    if (cached > 0) {
+      const pct = Math.round(cached / (sessionTokens.input + sessionTokens.cacheRead + sessionTokens.cacheCreate) * 100);
+      parts.push(`${pct}% cached`);
+    }
+    tokenDisplay.textContent = parts.join(' · ');
+  }
+
+  function formatTokenCount(n) {
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(n);
+  }
+
   // ── Conversation Persistence ───────────────────────────────────────────────
 
   function saveConversation() {
@@ -356,6 +378,8 @@ const App = (() => {
 
   function startNewChat() {
     conversationHistory = [];
+    sessionTokens = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0 };
+    updateTokenDisplay();
     saveConversation();
 
     // Clear all messages from DOM
@@ -624,36 +648,79 @@ const App = (() => {
   // ── Rate Limit Retry ──────────────────────────────────────────────────────
 
   let retryCancelled = false;
+  const retryContainer = document.getElementById('retry-container');
 
-  function showRetryCountdown(waitSeconds) {
+  function removeRunningToolCards() {
+    // Clean up tool call cards still in "running" state (ghost lines)
+    messagesEl.querySelectorAll('.tool-call-card').forEach(card => {
+      const status = card.querySelector('.tool-call-status');
+      if (status?.classList.contains('running')) {
+        card.remove();
+      }
+    });
+  }
+
+  function showRetryCountdown(waitSeconds, retryFn) {
     retryCancelled = false;
     return new Promise(resolve => {
       const el = document.createElement('div');
       el.className = 'retry-banner';
       el.innerHTML = `
-        <span class="retry-text">Rate limited. Retrying in <strong class="retry-countdown">${waitSeconds}</strong>s...</span>
+        <span class="retry-text">Rate limited. Retrying in <strong class="retry-countdown">${waitSeconds}</strong>s...<span class="retry-status"></span></span>
+        <button class="retry-btn">Retry Now</button>
         <button class="retry-cancel-btn">Cancel</button>
       `;
 
       const countdownEl = el.querySelector('.retry-countdown');
+      const statusEl = el.querySelector('.retry-status');
+      const retryBtn = el.querySelector('.retry-btn');
       const cancelBtn = el.querySelector('.retry-cancel-btn');
+
+      let remaining = waitSeconds;
+      let timer;
+
+      function cleanup() {
+        clearInterval(timer);
+        el.remove();
+      }
+
+      async function attemptRetry() {
+        retryBtn.disabled = true;
+        statusEl.textContent = '';
+        if (retryFn) {
+          const ok = await retryFn();
+          if (ok) {
+            cleanup();
+            resolve(true);
+            return;
+          }
+          // Retry failed — reset countdown and show status
+          statusEl.textContent = 'Retry failed';
+          setTimeout(() => { statusEl.textContent = ''; }, 3000);
+          remaining = waitSeconds;
+          countdownEl.textContent = remaining;
+          retryBtn.disabled = false;
+        } else {
+          cleanup();
+          resolve(true);
+        }
+      }
 
       cancelBtn.addEventListener('click', () => {
         retryCancelled = true;
-        clearInterval(timer);
-        el.remove();
+        cleanup();
         resolve(false);
       });
 
-      messagesEl.appendChild(el);
+      retryBtn.addEventListener('click', attemptRetry);
+
+      retryContainer.appendChild(el);
       scrollToBottom();
 
-      let remaining = waitSeconds;
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
-          clearInterval(timer);
-          el.remove();
+          cleanup();
           resolve(true);
         } else {
           countdownEl.textContent = remaining;
@@ -691,8 +758,15 @@ const App = (() => {
             onToolCall: (toolCall) => {
               pendingToolCalls.push(toolCall);
             },
-            onDone: (reason) => {
+            onDone: (reason, usage) => {
               stopReason = reason;
+              if (usage) {
+                sessionTokens.input += (usage.input_tokens || 0);
+                sessionTokens.output += (usage.output_tokens || 0);
+                sessionTokens.cacheRead += (usage.cache_read_input_tokens || 0);
+                sessionTokens.cacheCreate += (usage.cache_creation_input_tokens || 0);
+                updateTokenDisplay();
+              }
               resolve();
             },
             onError: (err) => {
@@ -712,13 +786,40 @@ const App = (() => {
           pushAssistantText(accumulatedText);
         }
 
+        // Clean up tool call cards stuck in "running" state (ghost lines)
+        removeRunningToolCards();
+
         // Rate limit: retry with exponential backoff
         if (streamError.isRateLimit && retryCount < MAX_RETRIES) {
           retryCount++;
           const baseWait = streamError.retryAfter || 30;
           const waitSeconds = Math.min(baseWait * Math.pow(2, retryCount - 1), 300);
 
-          const shouldRetry = await showRetryCountdown(waitSeconds);
+          // "Retry Now" tests the API with a lightweight probe
+          const retryFn = async () => {
+            try {
+              const testProvider = await getProvider();
+              testProvider.sitePrompt = sitePrompt;
+              // Quick probe: send a minimal request to check if rate limit is lifted
+              return await new Promise((resolve) => {
+                testProvider.streamMessage(
+                  [{ role: 'user', content: 'hi' }],
+                  [],
+                  {},
+                  {
+                    onToken: () => {},
+                    onToolCall: () => {},
+                    onDone: () => resolve(true),
+                    onError: (err) => resolve(!err.isRateLimit)
+                  }
+                );
+              });
+            } catch {
+              return false;
+            }
+          };
+
+          const shouldRetry = await showRetryCountdown(waitSeconds, retryFn);
           if (shouldRetry && !retryCancelled) {
             iteration--; // Retry the same iteration
             continue;
@@ -981,6 +1082,9 @@ const App = (() => {
     if (hasHistory) {
       restoreConversationUI();
     }
+
+    // Autofocus the input so user can start typing immediately
+    messageInput.focus();
 
     // Request current tools from active tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

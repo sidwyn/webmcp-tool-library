@@ -29,20 +29,25 @@ Want to add a site? See [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Multi-site architecture** — each site is a self-contained module under `content/sites/`
 - **Programmatic content scripts** — sites register dynamically, no manifest changes needed per site
 - **Multi-model** — works with Claude (Anthropic) or GPT-4o (OpenAI)
+- **Prompt caching** — caches system prompt and tools to reduce token usage and avoid rate limits (Anthropic)
+- **Token usage display** — shows total tokens used and cache hit percentage per session
 - **Conversation persistence** — chat history preserved across navigation
-- **Smart rate limit handling** — automatic retry with exponential backoff and cancel button on API rate limits
+- **Smart rate limit handling** — automatic retry with exponential backoff, "Retry Now" button, and cancel
 - **Dark mode** — adapts to system theme
 
 ### Google Flights Module
 - **Natural language search** — "Cheapest nonstop from SFO to NYC in April"
 - **Smart origin detection** — reads departure airport from the page
 - **Full filter control** — stops, price, airlines, times, duration, bags
-- **Price insights & date grid** — finds cheapest dates across a month
+- **Price insights & date grid** — navigates the full date grid to find cheapest dates across a month
 - **Flight details** — leg-by-leg itinerary, aircraft, legroom, emissions
-- **Booking links** — direct URLs from airlines and OTAs
+- **One-click booking** — clicks "Continue" to open the airline's booking site directly
+- **Fare comparison** — shows fare options (Basic Economy, Economy, etc.) with features and prices
+- **Destination fun facts** — shares interesting facts about your destination when booking
 - **Price tracking** — email alerts when prices change
 - **Explore destinations** — cheapest places to fly on a map
 - **Multi-city search** — complex itineraries (SFO→Tokyo→Bangkok→SFO)
+- **Page awareness** — detects existing search results and acts on them without re-asking
 - **Quick reply suggestions** — clickable follow-up buttons
 - **Markdown tables** — clean formatted results
 
@@ -127,7 +132,7 @@ Adding a new site = one entry in `SITE_MODULES` + one folder under `content/site
 | `get_flight_details` | Results page | Detailed segment info: layovers, aircraft, legroom |
 | `track_price` | Results page | Toggle email price tracking |
 | `get_tracked_flights` | All pages | View saved price alerts and history |
-| `get_booking_link` | Booking page | Get booking URLs from airlines/OTAs |
+| `get_booking_link` | Booking page | Show fare options and click "Continue" to book (fareRank) |
 | `select_return_flight` | Results page | List or select return options |
 | `explore_destinations` | All pages | Browse cheapest destinations on map |
 | `search_multi_city` | All pages | Multi-city itineraries (2-5 legs) |

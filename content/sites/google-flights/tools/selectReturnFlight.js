@@ -55,10 +55,29 @@ const SelectReturnFlightTool = {
     // Wait for results
     await sleep(1000);
 
-    // Find return flight cards
-    let cards = Array.from(document.querySelectorAll('div.yR1fYc'));
+    // Scope search to the return flights section to avoid picking up cached outbound cards.
+    // Google Flights shows "Returning flights" as a heading above the return options.
+    let searchRoot = document;
+    const allElements = Array.from(document.querySelectorAll('h2, h3, div[role="heading"], span, div'));
+    const returnHeading = allElements.find(el =>
+      el.children.length === 0 && /^Returning flights$/i.test(el.textContent.trim())
+    );
+    if (returnHeading) {
+      // Walk up from the heading until we find a container with flight cards
+      let container = returnHeading.parentElement;
+      for (let i = 0; i < 15 && container && container !== document.body; i++) {
+        if (container.querySelectorAll('div.yR1fYc').length >= 1) {
+          searchRoot = container;
+          break;
+        }
+        container = container.parentElement;
+      }
+    }
+
+    // Find return flight cards within the scoped container
+    let cards = Array.from(searchRoot.querySelectorAll('div.yR1fYc'));
     if (cards.length === 0) {
-      const allDivs = Array.from(document.querySelectorAll('div'));
+      const allDivs = Array.from(searchRoot.querySelectorAll('div'));
       cards = allDivs.filter(el => {
         const h = el.offsetHeight;
         if (h < 60 || h > 200 || el.children.length < 3) return false;
@@ -67,6 +86,9 @@ const SelectReturnFlightTool = {
                /(nonstop|\d+\s+stop)/i.test(text);
       }).filter((el, _, arr) => !arr.some(o => o !== el && o.contains(el)));
     }
+
+    // Extra safety: only include visible cards (exclude hidden/cached outbound cards)
+    cards = cards.filter(el => el.offsetHeight > 0 && el.offsetWidth > 0);
 
     if (cards.length === 0) {
       return {

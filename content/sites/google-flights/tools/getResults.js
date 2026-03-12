@@ -23,13 +23,34 @@ const GetResultsTool = {
     // Wait for results to load
     await WebMCPHelpers.waitForGoogleFlightsResults(25000);
 
+    // Scope search: if on the return flights page, only look in the return section
+    // to avoid picking up cached outbound flight cards still in the SPA DOM.
+    let searchRoot = document;
+    const pageText = document.body.textContent;
+    if (/returning flights|choose return/i.test(pageText)) {
+      const allElements = Array.from(document.querySelectorAll('h2, h3, div[role="heading"], span, div'));
+      const returnHeading = allElements.find(el =>
+        el.children.length === 0 && /^Returning flights$/i.test(el.textContent.trim())
+      );
+      if (returnHeading) {
+        let container = returnHeading.parentElement;
+        for (let i = 0; i < 15 && container && container !== document.body; i++) {
+          if (container.querySelectorAll('div.yR1fYc').length >= 1) {
+            searchRoot = container;
+            break;
+          }
+          container = container.parentElement;
+        }
+      }
+    }
+
     // Google Flights uses obfuscated class names that change periodically.
     // Strategy 1: the known flight card container class (verified 2026-03-08)
-    let cards = Array.from(document.querySelectorAll('div.yR1fYc'));
+    let cards = Array.from(searchRoot.querySelectorAll('div.yR1fYc'));
 
     // Strategy 2: structural heuristic — find divs at ~74px height with price + times
     if (cards.length === 0) {
-      const allDivs = Array.from(document.querySelectorAll('div'));
+      const allDivs = Array.from(searchRoot.querySelectorAll('div'));
       const candidates = allDivs.filter(el => {
         const h = el.offsetHeight;
         if (h < 60 || h > 200 || el.children.length < 3) return false;
@@ -43,6 +64,9 @@ const GetResultsTool = {
         !candidates.some(other => other !== el && other.contains(el))
       );
     }
+
+    // Only include visible cards (exclude hidden/cached cards from SPA navigation)
+    cards = cards.filter(el => el.offsetHeight > 0 && el.offsetWidth > 0);
 
     if (cards.length === 0) {
       return { content: [{ type: 'text', text: 'No flight results found. The page may still be loading, or no flights match your search criteria. Try waiting a moment and calling get_results again.' }] };

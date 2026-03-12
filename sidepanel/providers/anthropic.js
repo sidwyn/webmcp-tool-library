@@ -65,27 +65,53 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Do N
     const { onToken, onToolCall, onDone, onError } = callbacks;
     const convertedTools = tools.map(t => this.convertTool(t));
 
-    let system = this.systemPrompt;
+    // Structure system prompt for prompt caching:
+    // Static content (site prompt + base rules) gets cached; dynamic context does not.
+    const systemBlocks = [];
+    const staticPrompt = this.sitePrompt
+      ? this.sitePrompt + '\n\n' + this.basePrompt
+      : this.basePrompt;
+    systemBlocks.push({
+      type: 'text',
+      text: staticPrompt,
+      cache_control: { type: 'ephemeral' }
+    });
+
+    // Dynamic context (changes per request — not cached)
+    let dynamicCtx = '';
     if (convertedTools.length === 0) {
-      system += `\n\nWARNING: You have 0 tools connected. You CANNOT perform any actions. Tell the user: "I'm not connected to any site tools right now. Please make sure you're on a supported site and try reloading the page." Do NOT make up any data.`;
+      dynamicCtx += `\n\nWARNING: You have 0 tools connected. You CANNOT perform any actions. Tell the user: "I'm not connected to any site tools right now. Please make sure you're on a supported site and try reloading the page." Do NOT make up any data.`;
     }
     if (pageContext?.url) {
-      system += `\n\nCURRENT PAGE URL: ${pageContext.url}`;
+      dynamicCtx += `\n\nCURRENT PAGE URL: ${pageContext.url}`;
     }
     if (pageContext?.originText) {
-      system += `\n\nDETECTED ORIGIN: "${pageContext.originText}" is the user's departure airport (already set on the Google Flights page).\nCRITICAL RULE: You MUST use "${pageContext.originText}" as the origin. NEVER ask the user where they are flying from — you already know. If they say "flights to Tokyo", search from ${pageContext.originText} to Tokyo immediately. This is non-negotiable.`;
+      dynamicCtx += `\n\nDETECTED ORIGIN: "${pageContext.originText}" is the user's departure airport (already set on the Google Flights page).\nCRITICAL RULE: You MUST use "${pageContext.originText}" as the origin. NEVER ask the user where they are flying from — you already know. If they say "flights to Tokyo", search from ${pageContext.originText} to Tokyo immediately. This is non-negotiable.`;
+    }
+    if (dynamicCtx) {
+      systemBlocks.push({ type: 'text', text: dynamicCtx.trim() });
+    }
+
+    // Cache tools: add cache_control to the last tool so the entire tools array is cached
+    let cachedTools = convertedTools;
+    if (convertedTools.length > 0) {
+      cachedTools = convertedTools.map((t, i) =>
+        i === convertedTools.length - 1
+          ? { ...t, cache_control: { type: 'ephemeral' } }
+          : t
+      );
     }
 
     const body = {
       model: this.model,
       max_tokens: 4096,
-      system,
+      system: systemBlocks,
       messages,
       stream: true
     };
 
-    if (convertedTools.length > 0) {
-      body.tools = convertedTools;
+    if (cachedTools.length > 0) {
+      body.tools = cachedTools;
     }
 
     let response;
@@ -122,6 +148,7 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Do N
     let currentToolUseBlock = null;
     let toolInputBuffer = '';
     let stopReason = null;
+    let usage = {};
 
     try {
       while (true) {
@@ -145,6 +172,13 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Do N
           }
 
           switch (event.type) {
+            case 'message_start':
+              // Capture initial usage (includes cache info)
+              if (event.message?.usage) {
+                usage = { ...event.message.usage };
+              }
+              break;
+
             case 'content_block_start':
               if (event.content_block.type === 'tool_use') {
                 currentToolUseBlock = {
@@ -181,6 +215,10 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Do N
               if (event.delta.stop_reason) {
                 stopReason = event.delta.stop_reason;
               }
+              // Merge final usage (output_tokens)
+              if (event.usage) {
+                usage = { ...usage, ...event.usage };
+              }
               break;
           }
         }
@@ -190,6 +228,6 @@ Keep suggestions short (2-5 words) and actionable. Include 2-4 suggestions. Do N
       return;
     }
 
-    onDone(stopReason);
+    onDone(stopReason, usage);
   }
 }

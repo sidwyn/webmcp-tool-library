@@ -62,13 +62,16 @@ const GetPriceInsightsTool = {
         await WebMCPHelpers.sleep(1000);
       }
 
-      // Collect price cells — Google Flights Date Grid uses div[role="button"]
-      // with aria-labels like "$379, cheapest price, Apr 12 to Apr 17"
+      // Collect price cells from the Date Grid.
+      // The grid has two axes: Departure (columns, navigated by < > arrows)
+      // and Return (rows, navigated by a separate set of arrows or scroll).
+      // We navigate both axes to cover the full date range.
       let allParsed = [];
-      const MAX_PAGES = 3;
 
-      for (let page = 0; page < MAX_PAGES; page++) {
-        // Primary: div[role="button"] with price+date aria-labels
+      // Helper: scrape all visible price cells from the current grid view
+      function scrapePriceCells() {
+        let found = 0;
+        // Primary: div[role="button"] with aria-labels like "$379, cheapest price, Apr 12 to Apr 17"
         const priceBtns = Array.from(document.querySelectorAll('[role="button"][aria-label]'))
           .filter(el => {
             const label = el.getAttribute('aria-label') || '';
@@ -81,17 +84,17 @@ const GetPriceInsightsTool = {
           if (!priceMatch) continue;
           const price = parseInt(priceMatch[1].replace(/,/g, ''), 10);
           if (price >= 100000) continue;
-          // Extract date range from label (e.g. "Apr 12 to Apr 17")
           const dateMatch = label.match(/([A-Z][a-z]{2}\s+\d{1,2})\s+to\s+([A-Z][a-z]{2}\s+\d{1,2})/);
           const dates = dateMatch ? `${dateMatch[1]} → ${dateMatch[2]}` : label;
           const isCheapest = /cheapest/i.test(label);
           if (!allParsed.some(p => p.dates === dates)) {
             allParsed.push({ price, dates, isCheapest });
+            found++;
           }
         }
 
         // Fallback: [role="gridcell"] or td with price text
-        if (allParsed.length === 0) {
+        if (found === 0) {
           const cells = Array.from(document.querySelectorAll('[role="gridcell"], td'))
             .filter(el => /\$[\d,]+/.test(el.textContent));
           for (const el of cells) {
@@ -105,28 +108,120 @@ const GetPriceInsightsTool = {
             }
           }
         }
+        return found;
+      }
 
-        // Try to navigate to next week/page in the grid
-        if (page < MAX_PAGES - 1) {
-          const forwardBtns = Array.from(document.querySelectorAll('button[aria-label]'))
-            .filter(b => /next|forward|later|show later/i.test(b.getAttribute('aria-label')));
-          const btn = forwardBtns[forwardBtns.length - 1];
-          if (btn && !btn.disabled) {
-            WebMCPHelpers.simulateClick(btn);
-            await WebMCPHelpers.sleep(1500);
-          } else {
-            break;
-          }
+      // Helper: find navigation buttons for a given axis
+      // The date grid has "Departure" with < > and "Return" with < > (or scroll)
+      function findNavButtons() {
+        const allBtns = Array.from(document.querySelectorAll('button'));
+        // Look for arrow buttons near the Departure / Return labels
+        // These are typically SVG-icon-only buttons with aria-labels or within nav containers
+        const backBtns = allBtns.filter(b => {
+          const label = (b.getAttribute('aria-label') || '').toLowerCase();
+          const text = b.textContent.trim();
+          // Match: "previous", "back", "<", "earlier", "Show earlier dates", chevron-left
+          return /previous|earlier|show earlier|back|^<$/.test(label) ||
+                 /previous|earlier|show earlier/.test(text) ||
+                 (text === '' && b.querySelector('svg') && label === '');
+        });
+        const fwdBtns = allBtns.filter(b => {
+          const label = (b.getAttribute('aria-label') || '').toLowerCase();
+          const text = b.textContent.trim();
+          return /next|later|show later|forward|^>$/.test(label) ||
+                 /next|later|show later/.test(text);
+        });
+        return { backBtns, fwdBtns };
+      }
+
+      // Helper: try clicking a navigation button (the departure axis arrows)
+      // Google Flights date grid typically has two sets of arrows:
+      //   - Near "Departure" label (top) for columns
+      //   - Near "Return" label (right side) for rows
+      // We identify the departure arrows by their position near the top of the grid.
+      async function clickDepartureNav(direction) {
+        const { backBtns, fwdBtns } = findNavButtons();
+        // The departure nav arrows are at the top of the grid near "Departure" text.
+        // Pick buttons that are near the top of the dialog.
+        const dialog = document.querySelector('[role="dialog"]') || document.body;
+        const dialogTop = dialog.getBoundingClientRect().top;
+
+        const candidates = direction === 'forward' ? fwdBtns : backBtns;
+        // Sort by vertical position, pick the one closest to the top (departure axis)
+        const sorted = candidates
+          .filter(b => !b.disabled && b.offsetHeight > 0)
+          .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+        if (sorted.length > 0) {
+          WebMCPHelpers.simulateClick(sorted[0]);
+          await WebMCPHelpers.sleep(1200);
+          return true;
+        }
+        return false;
+      }
+
+      async function clickReturnNav(direction) {
+        const { backBtns, fwdBtns } = findNavButtons();
+        const candidates = direction === 'forward' ? fwdBtns : backBtns;
+        // Return axis arrows are lower in the grid — pick the bottommost button
+        const sorted = candidates
+          .filter(b => !b.disabled && b.offsetHeight > 0)
+          .sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+
+        if (sorted.length > 0) {
+          WebMCPHelpers.simulateClick(sorted[0]);
+          await WebMCPHelpers.sleep(1200);
+          return true;
+        }
+        return false;
+      }
+
+      // Step 1: Scrape the initial view
+      scrapePriceCells();
+
+      // Step 2: Navigate departure axis (columns) — go backward first, then forward
+      // Go backward up to 2 pages to catch earlier dates in the month
+      for (let i = 0; i < 2; i++) {
+        const moved = await clickDepartureNav('back');
+        if (!moved) break;
+        scrapePriceCells();
+      }
+
+      // Return to start position and go forward through the month
+      // (re-scrape each view since forward pages overlap)
+      for (let i = 0; i < 4; i++) {
+        const moved = await clickDepartureNav('forward');
+        if (!moved) break;
+        scrapePriceCells();
+      }
+
+      // Step 3: Navigate return axis (rows) — scroll down to see more return dates
+      for (let i = 0; i < 3; i++) {
+        const moved = await clickReturnNav('forward');
+        if (!moved) break;
+        scrapePriceCells();
+
+        // Also scan departure axis at this return offset
+        for (let j = 0; j < 2; j++) {
+          const depMoved = await clickDepartureNav('back');
+          if (!depMoved) break;
+          scrapePriceCells();
+        }
+        for (let j = 0; j < 4; j++) {
+          const depMoved = await clickDepartureNav('forward');
+          if (!depMoved) break;
+          scrapePriceCells();
         }
       }
 
       if (allParsed.length > 0) {
         allParsed.sort((a, b) => a.price - b.price);
-        const top5 = allParsed.slice(0, 5);
-        dateGridInfo = 'Cheapest dates from the date grid:\n' +
-          top5.map((c, i) => `  ${i + 1}. $${c.price}${c.isCheapest ? ' ★ cheapest' : ''} — ${c.dates}`).join('\n');
-        if (allParsed.length > 5) {
-          dateGridInfo += `\n  (${allParsed.length} date combinations found total)`;
+        const top = allParsed.slice(0, 8);
+        dateGridInfo = `Cheapest dates from the date grid (${allParsed.length} combinations scanned):\n` +
+          top.map((c, i) => `  ${i + 1}. $${c.price}${c.isCheapest ? ' ★ cheapest' : ''} — ${c.dates}`).join('\n');
+        if (allParsed.length > 8) {
+          const maxPrice = allParsed[allParsed.length - 1].price;
+          dateGridInfo += `\n  Price range: $${allParsed[0].price}–$${maxPrice}`;
         }
       }
 
