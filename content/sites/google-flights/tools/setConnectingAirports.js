@@ -28,7 +28,7 @@ const SetConnectingAirportsTool = {
     // Close open panel with Escape
     async function closePanel() {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await WebMCPHelpers.sleep(300);
+      await WebMCPHelpers.sleep(120);
     }
 
     // ── Open Connecting airports filter ─────────────────────────────────────
@@ -46,7 +46,7 @@ const SetConnectingAirportsTool = {
     }
 
     WebMCPHelpers.simulateClick(btn);
-    await WebMCPHelpers.sleep(500);
+    await WebMCPHelpers.sleep(200);
 
     // ── Parse exclude list ──────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ const SetConnectingAirportsTool = {
           // If currently included (checked), click to exclude
           if (isChecked) {
             WebMCPHelpers.simulateClick(checkbox || item);
-            await WebMCPHelpers.sleep(200);
+            await WebMCPHelpers.sleep(80);
           }
 
           excluded.push(airport);
@@ -100,7 +100,7 @@ const SetConnectingAirportsTool = {
     // ── Close panel ─────────────────────────────────────────────────────────
 
     await closePanel();
-    await WebMCPHelpers.sleep(800);
+    await WebMCPHelpers.sleep(300);
 
     // ── Build response ──────────────────────────────────────────────────────
 

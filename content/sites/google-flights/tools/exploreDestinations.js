@@ -79,16 +79,16 @@ const ExploreDestinationsTool = {
     }
 
     // Already on the explore page — read destination results
-    await WebMCPHelpers.sleep(2000);
+    await WebMCPHelpers.sleep(800);
 
-    // Poll for destination cards to appear (up to 15 seconds)
+    // Poll for destination cards to appear (up to 10 seconds)
     const startTime = Date.now();
     let destinations = [];
 
-    while (Date.now() - startTime < 15000) {
+    while (Date.now() - startTime < 10000) {
       destinations = parseExploreDestinations();
       if (destinations.length > 0) break;
-      await WebMCPHelpers.sleep(1000);
+      await WebMCPHelpers.sleep(500);
     }
 
     if (destinations.length === 0) {

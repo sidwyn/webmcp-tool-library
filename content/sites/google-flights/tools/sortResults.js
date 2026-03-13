@@ -33,7 +33,7 @@ const SortResultsTool = {
                   WebMCPHelpers.findByAriaLabel(label);
       if (btn) {
         WebMCPHelpers.simulateClick(btn);
-        await WebMCPHelpers.sleep(1000);
+        await WebMCPHelpers.sleep(400);
         clicked = true;
         break;
       }

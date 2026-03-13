@@ -14,7 +14,7 @@ const GetPriceInsightsTool = {
       return { content: [{ type: 'text', text: 'ERROR: Not on a Google Flights results page. Search for flights first.' }] };
     }
 
-    await WebMCPHelpers.sleep(500);
+    await WebMCPHelpers.sleep(200);
 
     const insights = {};
 
@@ -53,14 +53,14 @@ const GetPriceInsightsTool = {
       dateGridInfo = 'Date Grid is not available on the return flights page. To compare dates, use the Date Grid before selecting a departing flight.';
     } else if (dateGridBtn) {
       WebMCPHelpers.simulateClick(dateGridBtn);
-      await WebMCPHelpers.sleep(2000);
+      await WebMCPHelpers.sleep(800);
 
       // Click the "Dates" tab within the date grid dialog
       const datesTab = Array.from(document.querySelectorAll('*'))
         .find(el => el.textContent.trim() === 'Dates' && el.children.length === 0);
       if (datesTab) {
         WebMCPHelpers.simulateClick(datesTab);
-        await WebMCPHelpers.sleep(1000);
+        await WebMCPHelpers.sleep(400);
       }
 
       // Collect price cells from the Date Grid.
@@ -155,7 +155,7 @@ const GetPriceInsightsTool = {
 
         if (sorted.length > 0) {
           WebMCPHelpers.simulateClick(sorted[0]);
-          await WebMCPHelpers.sleep(1200);
+          await WebMCPHelpers.sleep(200);
           return true;
         }
         return false;
@@ -171,7 +171,7 @@ const GetPriceInsightsTool = {
 
         if (sorted.length > 0) {
           WebMCPHelpers.simulateClick(sorted[0]);
-          await WebMCPHelpers.sleep(1200);
+          await WebMCPHelpers.sleep(200);
           return true;
         }
         return false;
@@ -216,10 +216,10 @@ const GetPriceInsightsTool = {
                         WebMCPHelpers.findByText('Close', 'button');
       if (cancelBtn) {
         WebMCPHelpers.simulateClick(cancelBtn);
-        await WebMCPHelpers.sleep(500);
+        await WebMCPHelpers.sleep(200);
       } else {
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await WebMCPHelpers.sleep(500);
+        await WebMCPHelpers.sleep(200);
       }
     }
 

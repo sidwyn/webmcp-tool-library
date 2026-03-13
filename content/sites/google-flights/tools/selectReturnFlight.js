@@ -53,7 +53,7 @@ const SelectReturnFlightTool = {
     }
 
     // Wait for results
-    await sleep(1000);
+    await sleep(400);
 
     // Scope search to the return flights section to avoid picking up cached outbound cards.
     // Google Flights shows "Returning flights" as a heading above the return options.
@@ -111,7 +111,7 @@ const SelectReturnFlightTool = {
 
       const card = cards[rank - 1];
       simulateClick(card);
-      await sleep(2000);
+      await sleep(800);
 
       const result = parseGoogleFlightCard(card, rank);
       return {

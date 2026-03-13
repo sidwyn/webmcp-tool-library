@@ -80,7 +80,7 @@ const GetFlightDetailsTool = {
 
     // Click to expand
     simulateClick(expandButton);
-    await sleep(1500);
+    await sleep(600);
 
     // Parse the expanded detail panel
     // The expanded content typically appears as a sibling or nested container after the card
@@ -240,7 +240,7 @@ const GetFlightDetailsTool = {
 
     // Collapse the card by clicking the expand button again
     simulateClick(expandButton);
-    await sleep(500);
+    await sleep(200);
 
     return {
       content: [{ type: 'text', text: output.trim() }],

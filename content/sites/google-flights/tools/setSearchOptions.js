@@ -50,7 +50,7 @@ const SetSearchOptionsTool = {
                     WebMCPHelpers.findByAriaLabel(label);
         if (btn) {
           WebMCPHelpers.simulateClick(btn);
-          await WebMCPHelpers.sleep(400);
+          await WebMCPHelpers.sleep(150);
           opened = true;
           break;
         }
@@ -64,14 +64,14 @@ const SetSearchOptionsTool = {
                     WebMCPHelpers.findByText(label, 'label');
         if (opt) {
           WebMCPHelpers.simulateClick(opt);
-          await WebMCPHelpers.sleep(300);
+          await WebMCPHelpers.sleep(100);
           return true;
         }
       }
 
       // Close dropdown if option not found
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await WebMCPHelpers.sleep(200);
+      await WebMCPHelpers.sleep(80);
       return false;
     }
 
@@ -120,7 +120,7 @@ const SetSearchOptionsTool = {
 
       if (passBtn) {
         WebMCPHelpers.simulateClick(passBtn);
-        await WebMCPHelpers.sleep(500);
+        await WebMCPHelpers.sleep(200);
 
         // Map each passenger type to label text used by Google Flights
         const passengerLabelMap = {
@@ -172,18 +172,18 @@ const SetSearchOptionsTool = {
 
           for (let i = 0; i < Math.abs(diff); i++) {
             WebMCPHelpers.simulateClick(clickBtn);
-            await WebMCPHelpers.sleep(120);
+            await WebMCPHelpers.sleep(50);
           }
           actions.push(`Set ${field}: ${targetCount}`);
         }
 
         // Confirm / close the dialog
-        await WebMCPHelpers.sleep(200);
+        await WebMCPHelpers.sleep(80);
         const doneBtn = WebMCPHelpers.findByText('Done', 'button') ||
                         WebMCPHelpers.findByAriaLabel('Done');
         if (doneBtn) {
           WebMCPHelpers.simulateClick(doneBtn);
-          await WebMCPHelpers.sleep(300);
+          await WebMCPHelpers.sleep(100);
         }
       } else {
         actions.push('WARNING: Could not find the passengers button');

@@ -68,7 +68,7 @@ const SetFiltersTool = {
           WebMCPHelpers.simulateClick(btn);
           // Poll for checkboxes to appear (up to 3s) instead of fixed delay
           for (let attempt = 0; attempt < 12; attempt++) {
-            await WebMCPHelpers.sleep(250);
+            await WebMCPHelpers.sleep(100);
             if (document.querySelectorAll('input[type="checkbox"]').length > 0) return true;
           }
           return true; // panel opened even if no checkboxes found
@@ -80,7 +80,7 @@ const SetFiltersTool = {
     // Close open panel with Escape
     async function closePanel() {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await WebMCPHelpers.sleep(300);
+      await WebMCPHelpers.sleep(50);
     }
 
     // Convert "HH:MM" to minutes since midnight
@@ -107,7 +107,7 @@ const SetFiltersTool = {
                     WebMCPHelpers.findByText(label, '[role="option"]');
         if (btn) {
           WebMCPHelpers.simulateClick(btn);
-          await WebMCPHelpers.sleep(400);
+          await WebMCPHelpers.sleep(150);
           clicked = true;
           break;
         }
@@ -122,7 +122,7 @@ const SetFiltersTool = {
                         WebMCPHelpers.findByText(label, 'li');
             if (opt) {
               WebMCPHelpers.simulateClick(opt);
-              await WebMCPHelpers.sleep(400);
+              await WebMCPHelpers.sleep(150);
               clicked = true;
               break;
             }
@@ -139,13 +139,13 @@ const SetFiltersTool = {
     if (args.maxPrice) {
       const opened = await openFilterPanel(['Price', 'Max price', 'Price filter']);
       if (opened) {
-        await WebMCPHelpers.sleep(300);
+        await WebMCPHelpers.sleep(50);
         const sliders = document.querySelectorAll('input[type="range"]');
         // Use the last slider in case there are multiple (typically the max handle)
         const slider = sliders[sliders.length - 1];
         if (slider) {
           WebMCPHelpers.setSliderValue(slider, args.maxPrice);
-          await WebMCPHelpers.sleep(300);
+          await WebMCPHelpers.sleep(50);
           actions.push(`Set max price: $${args.maxPrice}`);
         } else {
           actions.push('WARNING: Could not find price slider');
@@ -161,7 +161,7 @@ const SetFiltersTool = {
       const wantedAirlines = args.airlines.split(',').map(a => a.trim().toLowerCase());
       const opened = await openFilterPanel(['Airlines', 'Airline']);
       if (opened) {
-        await WebMCPHelpers.sleep(300);
+        await WebMCPHelpers.sleep(50);
 
         // Match airline names flexibly but avoid false positives like "Air Cambodia" matching "Singapore Airlines"
         function airlineMatches(name, wanted) {
@@ -202,7 +202,7 @@ const SetFiltersTool = {
             );
             if (onlyBtn) {
               WebMCPHelpers.simulateClick(onlyBtn);
-              await WebMCPHelpers.sleep(300);
+              await WebMCPHelpers.sleep(50);
               clicked = true;
               actions.push(`Filtered to airline: ${label.textContent.trim()} (clicked "Only")`);
               break;
@@ -249,7 +249,7 @@ const SetFiltersTool = {
     if (hasTimes) {
       const opened = await openFilterPanel(['Times', 'Departure & arrival times', 'Departure time']);
       if (opened) {
-        await WebMCPHelpers.sleep(400);
+        await WebMCPHelpers.sleep(150);
         const sliders = Array.from(document.querySelectorAll('input[type="range"]'));
 
         // Google Flights Times panel: 4 sliders in order:
@@ -280,7 +280,7 @@ const SetFiltersTool = {
     if (args.maxDurationHours !== undefined) {
       const opened = await openFilterPanel(['Duration', 'Max duration', 'Flight duration']);
       if (opened) {
-        await WebMCPHelpers.sleep(300);
+        await WebMCPHelpers.sleep(50);
         const slider = document.querySelector('input[type="range"]');
         if (slider) {
           // Duration sliders are often in minutes
@@ -288,7 +288,7 @@ const SetFiltersTool = {
           // If max > 30 assume minutes, else hours
           const value = sliderMax > 30 ? args.maxDurationHours * 60 : args.maxDurationHours;
           WebMCPHelpers.setSliderValue(slider, value);
-          await WebMCPHelpers.sleep(300);
+          await WebMCPHelpers.sleep(50);
           actions.push(`Set max duration: ${args.maxDurationHours}h`);
         } else {
           actions.push('WARNING: Could not find duration slider');
@@ -303,7 +303,7 @@ const SetFiltersTool = {
     if (args.carryOnBags !== undefined || args.checkedBags !== undefined) {
       const opened = await openFilterPanel(['Bags', 'Baggage', 'Carry-on bags']);
       if (opened) {
-        await WebMCPHelpers.sleep(300);
+        await WebMCPHelpers.sleep(50);
 
         async function setBagCount(sectionKeywords, targetCount) {
           let sectionEl = null;
@@ -332,7 +332,7 @@ const SetFiltersTool = {
 
           for (let i = 0; i < Math.abs(diff); i++) {
             WebMCPHelpers.simulateClick(btn);
-            await WebMCPHelpers.sleep(120);
+            await WebMCPHelpers.sleep(50);
           }
           return true;
         }
@@ -361,7 +361,7 @@ const SetFiltersTool = {
       };
     }
 
-    await WebMCPHelpers.sleep(800);
+    await WebMCPHelpers.sleep(300);
 
     return {
       content: [{

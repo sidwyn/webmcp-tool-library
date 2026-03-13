@@ -25,7 +25,7 @@ const TrackPriceTool = {
       return { content: [{ type: 'text', text: 'ERROR: Not on a Google Flights results page. Search for flights first.' }] };
     }
 
-    await WebMCPHelpers.sleep(500);
+    await WebMCPHelpers.sleep(200);
 
     // Find the "Track prices" section on the page
     const trackPricesHeading = WebMCPHelpers.findByText('Track prices');
@@ -35,7 +35,7 @@ const TrackPriceTool = {
 
     // Scroll the track prices section into view
     trackPricesHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await WebMCPHelpers.sleep(500);
+    await WebMCPHelpers.sleep(200);
 
     // Find all toggle switches in the track prices area
     const trackPricesSection = trackPricesHeading.closest('div')?.parentElement?.parentElement || document.body;
@@ -95,7 +95,7 @@ const TrackPriceTool = {
 
     // Click the toggle to change state
     WebMCPHelpers.simulateClick(targetToggle);
-    await WebMCPHelpers.sleep(500);
+    await WebMCPHelpers.sleep(200);
 
     // Verify the state changed
     const newState = targetToggle.getAttribute('aria-checked') === 'true';

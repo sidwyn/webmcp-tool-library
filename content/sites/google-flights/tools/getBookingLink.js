@@ -24,14 +24,14 @@ const GetBookingLinkTool = {
 
     // ── BOOKING PAGE: /travel/flights/booking ──────────────────────────────
     if (url.includes('/travel/flights/booking')) {
-      await sleep(1000);
+      await sleep(400);
 
       // Expand "more booking options" if present
       const moreBtn = findByText('more booking options', 'button') ||
                       findByText('more booking options');
       if (moreBtn) {
         simulateClick(moreBtn);
-        await sleep(1000);
+        await sleep(400);
       }
 
       // Parse fare options — each fare card contains a title (Basic Economy, Economy, etc.),
@@ -113,7 +113,7 @@ const GetBookingLinkTool = {
         }
         const chosen = fareOptions[fareRank - 1];
         simulateClick(chosen.continueBtn);
-        await sleep(1000);
+        await sleep(400);
         // Extract destination from page for fun facts hint
         let destination = null;
         const destEl = Array.from(document.querySelectorAll('*')).find(el =>
@@ -192,7 +192,7 @@ const GetBookingLinkTool = {
 
     if (expandButton) {
       simulateClick(expandButton);
-      await sleep(1500);
+      await sleep(600);
     }
 
     // Look for "Select flight" button in the expanded area
@@ -202,7 +202,7 @@ const GetBookingLinkTool = {
     // Collapse the card
     if (expandButton) {
       simulateClick(expandButton);
-      await sleep(300);
+      await sleep(100);
     }
 
     if (hasSelectBtn) {
