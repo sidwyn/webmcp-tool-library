@@ -39,6 +39,15 @@ const App = (() => {
     book_hotel: ['Opening the booking page', 'Connecting to provider', 'Preparing your reservation'],
     get_reviews: ['Reading guest reviews', 'Checking what guests say', 'Browsing testimonials'],
     track_hotel: ['Setting up price alerts', 'Activating tracking', 'Watching for deals'],
+    // Amazon
+    search_products: ['Browsing the aisles', 'Searching the catalog', 'Scanning products'],
+    get_product_details: ['Reading the label', 'Checking the specs', 'Inspecting the product'],
+    check_price_history: ['Checking for deals', 'Tracking the price', 'Looking for coupons'],
+    add_to_cart: ['Adding to your cart', 'Tossing it in the basket', 'Loading up the cart'],
+    buy_now: ['Heading to checkout', 'Fast-tracking your order', 'Rushing to the register'],
+    get_cart: ['Checking your cart', 'Reviewing the basket', 'Counting items'],
+    compare_products: ['Lining them up', 'Comparing side by side', 'Weighing the options'],
+    get_checkout_summary: ['Reviewing the order', 'Tallying the total', 'Final check before purchase'],
     _default: ['Working on it', 'Crunching the numbers', 'Fetching data', 'Processing', 'Almost there']
   };
 
@@ -64,6 +73,16 @@ const App = (() => {
         'Find pet-friendly hotels in Barcelona with breakfast included'
       ]
     },
+    amazon: {
+      title: 'Amazon',
+      description: 'I can search products, compare prices, read reviews, check deals, and help you add items to your cart.',
+      prompts: [
+        'Find the best rated wireless headphones under $100',
+        'Compare the top 3 laptop stands on Amazon',
+        'Show me deals on protein powder with Prime shipping',
+        'Find a birthday gift for a 10 year old under $30'
+      ]
+    },
     _default: {
       title: 'WebMCPTools',
       description: 'I can interact with supported websites for you. Navigate to a supported site and start chatting.',
@@ -80,6 +99,7 @@ const App = (() => {
     if (!url) return null;
     if (url.includes('google.com/travel/flights')) return 'google-flights';
     if (url.includes('google.com/travel/search') || url.includes('google.com/travel/hotels')) return 'google-hotels';
+    if (url.includes('amazon.com')) return 'amazon';
     return null;
   }
 
@@ -111,9 +131,14 @@ const App = (() => {
     return verbs[Math.floor(Math.random() * verbs.length)];
   }
 
+  const SHOPPING_TOOLS = ['search_products', 'get_product_details', 'check_price_history', 'add_to_cart', 'buy_now', 'get_cart', 'compare_products', 'get_checkout_summary'];
+
   function setFunStatus(toolName) {
     const verb = getStatusVerb(toolName);
-    const icons = ['✈️', '🌍', '🗺️', '🧳', '🛫', '🎫', '🏝️', '⛅'];
+    const isShopping = SHOPPING_TOOLS.includes(toolName);
+    const icons = isShopping
+      ? ['🛒', '📦', '🏷️', '💳', '🛍️', '⭐', '🔍', '💰']
+      : ['✈️', '🌍', '🗺️', '🧳', '🛫', '🎫', '🏝️', '⛅'];
     const icon = icons[Math.floor(Math.random() * icons.length)];
     showInlineStatus(`<span class="status-icon">${icon}</span> ${verb}<span class="animated-dots"></span>`);
   }
