@@ -85,6 +85,27 @@ const SITE_MODULES = [
       'content/sites/amazon/prompt.js',
       'content/sites/amazon/injector.js'
     ]
+  },
+  {
+    id: 'walmart',
+    defaultUrl: 'https://www.walmart.com/',
+    matches: [
+      'https://www.walmart.com/*'
+    ],
+    js: [
+      'content/bridge.js',
+      'content/helpers.js',
+      'content/sites/walmart/helpers.js',
+      'content/sites/walmart/tools/searchProducts.js',
+      'content/sites/walmart/tools/getResults.js',
+      'content/sites/walmart/tools/setFilters.js',
+      'content/sites/walmart/tools/sortResults.js',
+      'content/sites/walmart/tools/getProductDetails.js',
+      'content/sites/walmart/tools/addToCart.js',
+      'content/sites/walmart/tools/getCart.js',
+      'content/sites/walmart/prompt.js',
+      'content/sites/walmart/injector.js'
+    ]
   }
 ];
 

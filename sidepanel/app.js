@@ -48,6 +48,9 @@ const App = (() => {
     get_cart: ['Checking your cart', 'Reviewing the basket', 'Counting items'],
     compare_products: ['Lining them up', 'Comparing side by side', 'Weighing the options'],
     get_checkout_summary: ['Reviewing the order', 'Tallying the total', 'Final check before purchase'],
+    // Walmart (reuses some Amazon verbs, adds store-specific ones)
+    // search_products, get_results, set_filters, sort_results shared with Amazon
+    // get_product_details, add_to_cart, get_cart shared with Amazon
     _default: ['Working on it', 'Crunching the numbers', 'Fetching data', 'Processing', 'Almost there']
   };
 
@@ -83,6 +86,16 @@ const App = (() => {
         'Find a birthday gift for a 10 year old under $30'
       ]
     },
+    walmart: {
+      title: 'Walmart',
+      description: 'I can search products, compare prices, filter by brand or price, and help you add items to your cart.',
+      prompts: [
+        'Find me a 4K TV under $400 at Walmart',
+        'Search for the cheapest laundry detergent',
+        'Show me Samsung phones sorted by best seller',
+        'Find kids\' bikes with the highest ratings'
+      ]
+    },
     _default: {
       title: 'WebMCPTools',
       description: 'I can interact with supported websites for you. Navigate to a supported site and start chatting.',
@@ -100,6 +113,7 @@ const App = (() => {
     if (url.includes('google.com/travel/flights')) return 'google-flights';
     if (url.includes('google.com/travel/search') || url.includes('google.com/travel/hotels')) return 'google-hotels';
     if (url.includes('amazon.com')) return 'amazon';
+    if (url.includes('walmart.com')) return 'walmart';
     return null;
   }
 
