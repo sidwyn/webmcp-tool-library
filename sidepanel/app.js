@@ -48,9 +48,11 @@ const App = (() => {
     get_cart: ['Checking your cart', 'Reviewing the basket', 'Counting items'],
     compare_products: ['Lining them up', 'Comparing side by side', 'Weighing the options'],
     get_checkout_summary: ['Reviewing the order', 'Tallying the total', 'Final check before purchase'],
-    // Walmart (reuses some Amazon verbs, adds store-specific ones)
-    // search_products, get_results, set_filters, sort_results shared with Amazon
-    // get_product_details, add_to_cart, get_cart shared with Amazon
+    // Target-specific tools
+    get_search_results: ['Browsing the aisles', 'Scanning the shelves', 'Loading results'],
+    get_cart_summary: ['Checking the cart', 'Reviewing your basket', 'Tallying items'],
+    get_deals: ['Hunting for deals', 'Scanning Circle offers', 'Finding markdowns'],
+    check_store_availability: ['Checking local stock', 'Scanning nearby stores', 'Verifying availability'],
     _default: ['Working on it', 'Crunching the numbers', 'Fetching data', 'Processing', 'Almost there']
   };
 
@@ -96,6 +98,16 @@ const App = (() => {
         'Find kids\' bikes with the highest ratings'
       ]
     },
+    target: {
+      title: 'Target',
+      description: 'I can search products, find deals, check store availability, filter results, and help you add items to your cart.',
+      prompts: [
+        'Find me a coffee maker under $50 at Target',
+        'Show me the best deals on home decor',
+        'Check if the KitchenAid mixer is available at my store',
+        'Search for kids\' toys with 4+ star ratings'
+      ]
+    },
     _default: {
       title: 'WebMCPTools',
       description: 'I can interact with supported websites for you. Navigate to a supported site and start chatting.',
@@ -114,6 +126,7 @@ const App = (() => {
     if (url.includes('google.com/travel/search') || url.includes('google.com/travel/hotels')) return 'google-hotels';
     if (url.includes('amazon.com')) return 'amazon';
     if (url.includes('walmart.com')) return 'walmart';
+    if (url.includes('target.com')) return 'target';
     return null;
   }
 
@@ -145,7 +158,7 @@ const App = (() => {
     return verbs[Math.floor(Math.random() * verbs.length)];
   }
 
-  const SHOPPING_TOOLS = ['search_products', 'get_product_details', 'check_price_history', 'add_to_cart', 'buy_now', 'get_cart', 'compare_products', 'get_checkout_summary'];
+  const SHOPPING_TOOLS = ['search_products', 'get_product_details', 'check_price_history', 'add_to_cart', 'buy_now', 'get_cart', 'compare_products', 'get_checkout_summary', 'get_search_results', 'get_cart_summary', 'get_deals', 'check_store_availability'];
 
   function setFunStatus(toolName) {
     const verb = getStatusVerb(toolName);

@@ -16,7 +16,8 @@
     "https://www.google.com/travel/search*",
     "https://www.google.com/travel/hotels*",
     "https://www.amazon.com/*",
-    "https://www.walmart.com/*"
+    "https://www.walmart.com/*",
+    "https://www.target.com/*"
   ],
   "background": {
     "service_worker": "background.js"
