@@ -39,6 +39,20 @@ const App = (() => {
     book_hotel: ['Opening the booking page', 'Connecting to provider', 'Preparing your reservation'],
     get_reviews: ['Reading guest reviews', 'Checking what guests say', 'Browsing testimonials'],
     track_hotel: ['Setting up price alerts', 'Activating tracking', 'Watching for deals'],
+    // Amazon
+    search_products: ['Browsing the aisles', 'Searching the catalog', 'Scanning products'],
+    get_product_details: ['Reading the label', 'Checking the specs', 'Inspecting the product'],
+    check_price_history: ['Checking for deals', 'Tracking the price', 'Looking for coupons'],
+    add_to_cart: ['Adding to your cart', 'Tossing it in the basket', 'Loading up the cart'],
+    buy_now: ['Heading to checkout', 'Fast-tracking your order', 'Rushing to the register'],
+    get_cart: ['Checking your cart', 'Reviewing the basket', 'Counting items'],
+    compare_products: ['Lining them up', 'Comparing side by side', 'Weighing the options'],
+    get_checkout_summary: ['Reviewing the order', 'Tallying the total', 'Final check before purchase'],
+    // Target-specific tools
+    get_search_results: ['Browsing the aisles', 'Scanning the shelves', 'Loading results'],
+    get_cart_summary: ['Checking the cart', 'Reviewing your basket', 'Tallying items'],
+    get_deals: ['Hunting for deals', 'Scanning Circle offers', 'Finding markdowns'],
+    check_store_availability: ['Checking local stock', 'Scanning nearby stores', 'Verifying availability'],
     _default: ['Working on it', 'Crunching the numbers', 'Fetching data', 'Processing', 'Almost there']
   };
 
@@ -64,6 +78,36 @@ const App = (() => {
         'Find pet-friendly hotels in Barcelona with breakfast included'
       ]
     },
+    amazon: {
+      title: 'Amazon',
+      description: 'I can search products, compare prices, read reviews, check deals, and help you add items to your cart.',
+      prompts: [
+        'Find the best rated wireless headphones under $100',
+        'Compare the top 3 laptop stands on Amazon',
+        'Show me deals on protein powder with Prime shipping',
+        'Find a birthday gift for a 10 year old under $30'
+      ]
+    },
+    walmart: {
+      title: 'Walmart',
+      description: 'I can search products, compare prices, filter by brand or price, and help you add items to your cart.',
+      prompts: [
+        'Find me a 4K TV under $400 at Walmart',
+        'Search for the cheapest laundry detergent',
+        'Show me Samsung phones sorted by best seller',
+        'Find kids\' bikes with the highest ratings'
+      ]
+    },
+    target: {
+      title: 'Target',
+      description: 'I can search products, find deals, check store availability, filter results, and help you add items to your cart.',
+      prompts: [
+        'Find me a coffee maker under $50 at Target',
+        'Show me the best deals on home decor',
+        'Check if the KitchenAid mixer is available at my store',
+        'Search for kids\' toys with 4+ star ratings'
+      ]
+    },
     _default: {
       title: 'WebMCPTools',
       description: 'I can interact with supported websites for you. Navigate to a supported site and start chatting.',
@@ -80,6 +124,9 @@ const App = (() => {
     if (!url) return null;
     if (url.includes('google.com/travel/flights')) return 'google-flights';
     if (url.includes('google.com/travel/search') || url.includes('google.com/travel/hotels')) return 'google-hotels';
+    if (url.includes('amazon.com')) return 'amazon';
+    if (url.includes('walmart.com')) return 'walmart';
+    if (url.includes('target.com')) return 'target';
     return null;
   }
 
@@ -111,9 +158,14 @@ const App = (() => {
     return verbs[Math.floor(Math.random() * verbs.length)];
   }
 
+  const SHOPPING_TOOLS = ['search_products', 'get_product_details', 'check_price_history', 'add_to_cart', 'buy_now', 'get_cart', 'compare_products', 'get_checkout_summary', 'get_search_results', 'get_cart_summary', 'get_deals', 'check_store_availability'];
+
   function setFunStatus(toolName) {
     const verb = getStatusVerb(toolName);
-    const icons = ['✈️', '🌍', '🗺️', '🧳', '🛫', '🎫', '🏝️', '⛅'];
+    const isShopping = SHOPPING_TOOLS.includes(toolName);
+    const icons = isShopping
+      ? ['🛒', '📦', '🏷️', '💳', '🛍️', '⭐', '🔍', '💰']
+      : ['✈️', '🌍', '🗺️', '🧳', '🛫', '🎫', '🏝️', '⛅'];
     const icon = icons[Math.floor(Math.random() * icons.length)];
     showInlineStatus(`<span class="status-icon">${icon}</span> ${verb}<span class="animated-dots"></span>`);
   }
@@ -465,7 +517,8 @@ const App = (() => {
     try {
       chrome.storage.session.set({
         webmcp_conversation: conversationHistory,
-        webmcp_has_messages: conversationHistory.length > 0
+        webmcp_has_messages: conversationHistory.length > 0,
+        webmcp_site_id: currentSiteId
       });
     } catch {
       // session storage may not be available
@@ -475,12 +528,15 @@ const App = (() => {
   async function loadConversation() {
     return new Promise(resolve => {
       try {
-        chrome.storage.session.get(['webmcp_conversation', 'webmcp_has_messages'], items => {
+        chrome.storage.session.get(['webmcp_conversation', 'webmcp_has_messages', 'webmcp_site_id'], items => {
           if (chrome.runtime.lastError || !items.webmcp_has_messages) {
             resolve(false);
             return;
           }
           conversationHistory = items.webmcp_conversation || [];
+          if (items.webmcp_site_id) {
+            currentSiteId = items.webmcp_site_id;
+          }
           resolve(conversationHistory.length > 0);
         });
       } catch {
@@ -1205,8 +1261,13 @@ const App = (() => {
         // Update welcome UI if site changed within the same tab
         const newSiteId = detectSiteId(changeInfo.url);
         if (newSiteId !== currentSiteId) {
+          const hadSite = currentSiteId !== null;
           currentSiteId = newSiteId;
-          startNewChat();
+          // Only wipe conversation when actually switching between different sites,
+          // not when currentSiteId was null (side panel just initialized with restored history)
+          if (hadSite) {
+            startNewChat();
+          }
           updateWelcomeForSite(newSiteId);
         }
 
@@ -1243,8 +1304,11 @@ const App = (() => {
 
         // Clear conversation when switching to a different site (or away from a site)
         if (newSiteId !== currentSiteId) {
+          const hadSite = currentSiteId !== null;
           currentSiteId = newSiteId;
-          startNewChat();
+          if (hadSite) {
+            startNewChat();
+          }
           updateWelcomeForSite(newSiteId);
         }
 

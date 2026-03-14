@@ -59,6 +59,76 @@ const SITE_MODULES = [
       'content/sites/google-hotels/prompt.js',
       'content/sites/google-hotels/injector.js'
     ]
+  },
+  {
+    id: 'amazon',
+    defaultUrl: 'https://www.amazon.com/',
+    matches: [
+      'https://www.amazon.com/*'
+    ],
+    js: [
+      'content/bridge.js',
+      'content/helpers.js',
+      'content/sites/amazon/helpers.js',
+      'content/sites/amazon/tools/searchProducts.js',
+      'content/sites/amazon/tools/getResults.js',
+      'content/sites/amazon/tools/setFilters.js',
+      'content/sites/amazon/tools/sortResults.js',
+      'content/sites/amazon/tools/getProductDetails.js',
+      'content/sites/amazon/tools/getReviews.js',
+      'content/sites/amazon/tools/checkPriceHistory.js',
+      'content/sites/amazon/tools/addToCart.js',
+      'content/sites/amazon/tools/buyNow.js',
+      'content/sites/amazon/tools/getCart.js',
+      'content/sites/amazon/tools/compareProducts.js',
+      'content/sites/amazon/tools/getCheckoutSummary.js',
+      'content/sites/amazon/prompt.js',
+      'content/sites/amazon/injector.js'
+    ]
+  },
+  {
+    id: 'walmart',
+    defaultUrl: 'https://www.walmart.com/',
+    matches: [
+      'https://www.walmart.com/*'
+    ],
+    js: [
+      'content/bridge.js',
+      'content/helpers.js',
+      'content/sites/walmart/helpers.js',
+      'content/sites/walmart/tools/searchProducts.js',
+      'content/sites/walmart/tools/getResults.js',
+      'content/sites/walmart/tools/setFilters.js',
+      'content/sites/walmart/tools/sortResults.js',
+      'content/sites/walmart/tools/getProductDetails.js',
+      'content/sites/walmart/tools/addToCart.js',
+      'content/sites/walmart/tools/getCart.js',
+      'content/sites/walmart/prompt.js',
+      'content/sites/walmart/injector.js'
+    ]
+  },
+  {
+    id: 'target',
+    defaultUrl: 'https://www.target.com/',
+    matches: [
+      'https://www.target.com/*'
+    ],
+    js: [
+      'content/bridge.js',
+      'content/helpers.js',
+      'content/sites/target/helpers.js',
+      'content/sites/target/tools/searchProducts.js',
+      'content/sites/target/tools/getSearchResults.js',
+      'content/sites/target/tools/setFilters.js',
+      'content/sites/target/tools/sortResults.js',
+      'content/sites/target/tools/getProductDetails.js',
+      'content/sites/target/tools/addToCart.js',
+      'content/sites/target/tools/getCartSummary.js',
+      'content/sites/target/tools/getDeals.js',
+      'content/sites/target/tools/checkStoreAvailability.js',
+      'content/sites/target/prompt.js',
+      'content/sites/target/injector.js'
+    ]
   }
 ];
 
